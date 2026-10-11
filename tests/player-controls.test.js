@@ -40,16 +40,16 @@ test('camera follows position without a sideways steering loop; orbit and recent
  }finally{globalThis.window=previous;}
 });
 
-test('camera returns after four seconds and camera input resets the timer',()=>{
+test('camera returns after six seconds and camera input resets the timer',()=>{
  const previous=globalThis.window;globalThis.window={addEventListener(){},innerWidth:1000};
  try{
   const camera=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
   const pos=new THREE.Vector3();camera.rotate(100,0);const yaw=camera.yaw;
-  for(let i=0;i<239;i++)camera.update(1/60,pos,false,0);
+  for(let i=0;i<359;i++)camera.update(1/60,pos,false,0);
   close(camera.yaw,yaw);
   for(let i=0;i<120;i++)camera.update(1/60,pos,false,0);
   assert.ok(Math.abs(Math.atan2(Math.sin(camera.yaw-Math.PI),Math.cos(camera.yaw-Math.PI)))<.002);
-  camera.rotate(80,0);const changed=camera.yaw;camera.update(3.9,pos,false,0);close(camera.yaw,changed);
+  camera.rotate(80,0);const changed=camera.yaw;camera.update(5.9,pos,false,0);close(camera.yaw,changed);
   camera.input.rotate=1;camera.update(1/60,pos,false,0);close(camera.cameraIdle,0);
   camera.input.rotate=0;camera.dragging=true;camera.update(5,pos,false,0);close(camera.cameraIdle,0);
  }finally{globalThis.window=previous;}
@@ -68,7 +68,7 @@ test('changing held key combinations uses the current camera after automatic ret
  const previous=globalThis.window;globalThis.window={addEventListener(){},innerWidth:1000};
  try{
   const camera=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
-  const p=player();p.input.f=1;camera.yaw=0;camera.cameraIdle=5;
+  const p=player();p.input.f=1;camera.yaw=0;camera.cameraIdle=7;
   close(camera.getMovementYaw(p.input),0);
   camera.yaw=1.1;
   for(const [f,r] of [[1,1],[0,1],[1,-1],[-1,-1],[-1,1],[1,0]]){
@@ -82,5 +82,16 @@ test('changing held key combinations uses the current camera after automatic ret
    close(step.dot(forward),f/magnitude);close(step.dot(right),r/magnitude);
    camera.yaw+=.2;
   }
+ }finally{globalThis.window=previous;}
+});
+
+test('keyboard lock lasts the complete six-second camera delay and restarts on orbit',()=>{
+ const previous=globalThis.window;globalThis.window={addEventListener(){},innerWidth:1000};
+ try{
+  const camera=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
+  close(camera.keyboardDelayRemaining,6);
+  camera.update(5.9,new THREE.Vector3(),false,0);assert.ok(camera.keyboardDelayRemaining>0);
+  camera.update(.11,new THREE.Vector3(),false,0);close(camera.keyboardDelayRemaining,0);
+  camera.rotate(1,0);close(camera.keyboardDelayRemaining,6);
  }finally{globalThis.window=previous;}
 });

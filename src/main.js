@@ -240,6 +240,7 @@ function frame() {
     const editing = window.__editorActive;
     player.enabled = !editing;
     follow.enabled = !editing;
+    hud.syncKeyboardLock();
     player.update(dt, follow.getMovementYaw(player.input));
     if (!editing) follow.update(dt, player.position, false, player.heading);
     updateAtmosphere(dt, player.position);

@@ -213,6 +213,8 @@ export class Player {
  * Keeps itself above the terrain beneath it.
  */
 export class FollowCamera {
+  get keyboardDelayRemaining() { return Math.max(0,6-this.cameraIdle); }
+
   constructor(camera, dom, walk) {
     this.camera = camera;
     this.walk = walk;
@@ -276,13 +278,13 @@ export class FollowCamera {
   getMovementYaw(input) {
     const changed=input.f!==this.lastMoveF || input.r!==this.lastMoveR;
     if (!input.f && !input.r) this.movementYaw=null;
-    else if (changed || ((this.cameraIdle>=4 || this.recenterYaw!=null) && this.movementYaw==null)) {
+    else if (changed || ((this.cameraIdle>=6 || this.recenterYaw!=null) && this.movementYaw==null)) {
       // A new combination (W -> W+D -> D) starts from the current view,
       // not the camera angle captured before its automatic return.
       this.movementYaw=this.yaw;
     }
     // Manual orbit should steer continuously, including while keys stay held.
-    if(this.cameraIdle<4 && this.recenterYaw==null)this.movementYaw=null;
+    if(this.cameraIdle<6 && this.recenterYaw==null)this.movementYaw=null;
     this.lastMoveF=input.f;this.lastMoveR=input.r;
     return this.movementYaw ?? this.yaw;
   }
@@ -292,7 +294,7 @@ export class FollowCamera {
       this.rotate(this.input.rotate * 420 * dt, this.input.tilt * 340 * dt);
       if (this.dragging || this.input.rotate || this.input.tilt) this.cameraIdle=0;
       else if (!instant) this.cameraIdle+=dt;
-      if(this.cameraIdle>=4 && heading!==undefined){
+      if(this.cameraIdle>=6 && heading!==undefined){
         if(this.movementYaw==null)this.movementYaw=this.yaw;
         this.manual=false;
         this.recenterYaw=heading+Math.PI;

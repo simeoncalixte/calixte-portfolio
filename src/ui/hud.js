@@ -22,6 +22,21 @@ export function createHUD({ camera, walk, bridges }) {
   const skyScript = $('sky-script');
   const SKY_ANCHOR = new THREE.Vector3(120, 150, -800);
   const keys = new Set();
+  const cameraWait=document.createElement('div');
+  cameraWait.style.cssText='position:fixed;bottom:110px;left:50%;transform:translateX(-50%);padding:10px 16px;border-radius:8px;background:#101a29e6;color:white;pointer-events:none;z-index:30;display:none';
+  document.body.appendChild(cameraWait);
+  const keyboardLocked=()=>!!ctx&&!window.__editorActive&&ctx.follow.keyboardDelayRemaining>0;
+  const syncKeyboardLock=()=>{
+    const locked=keyboardLocked();
+    cameraWait.style.display=locked&&started?'block':'none';
+    if(locked){
+      cameraWait.textContent=`Keyboard paused · camera returns in ${Math.ceil(ctx.follow.keyboardDelayRemaining)}s`;
+      if(keys.size){
+        keys.clear();Object.assign(ctx.player.input,{f:0,r:0,run:false,jump:false});
+      }
+      ctx.follow.input.rotate=0;ctx.follow.input.tilt=0;
+    }
+  };
 
   const hero = $('hero'), panel = $('panel'), panelBody = $('panel-body'), help = $('help');
   const prompt = $('prompt'), promptText = $('prompt-text'), toast = $('toast');
@@ -138,6 +153,10 @@ export function createHUD({ camera, walk, bridges }) {
   // ---------------------------------------------------------------- input
   const setInput = () => {
     if (!ctx) return;
+    if(keyboardLocked()){
+      Object.assign(ctx.player.input,{f:0,r:0,run:false,jump:false});
+      syncKeyboardLock();return;
+    }
     const i = ctx.player.input;
     i.f = (keys.has('KeyW') ? 1 : 0) - (keys.has('KeyS') ? 1 : 0);
     i.r = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
@@ -148,6 +167,9 @@ export function createHUD({ camera, walk, bridges }) {
   window.addEventListener('keydown', (e) => {
     if (e.target.closest?.('input, textarea')) return;
     if (window.__editorActive && !['Escape'].includes(e.code)) return;
+    if(keyboardLocked()){
+      e.preventDefault();syncKeyboardLock();return;
+    }
     keys.add(e.code);
     if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
       if (!started && ctx) start();
@@ -327,6 +349,7 @@ export function createHUD({ camera, walk, bridges }) {
     },
     error(e) { $('loader-text').textContent = 'Failed to load: ' + e.message; },
     update,
+    syncKeyboardLock,
     travel,
     openPanel,
   };

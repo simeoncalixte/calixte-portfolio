@@ -53,7 +53,7 @@ export function createHUD({ camera, walk, bridges }) {
     hero.classList.add('hidden');
     const c = $('scene');
     if (!matchMedia('(pointer: coarse)').matches) lockPointer(c);
-    showToast('WASD move · Mouse look · SHIFT run · SPACE jump');
+    showToast('W/S move · A/D turn · Mouse look · SPACE jump');
   }
 
   function setActiveNav(id) {

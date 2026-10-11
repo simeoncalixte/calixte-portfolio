@@ -8,38 +8,28 @@ function player(){
 }
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} equals ${b}`);
 function tick(p,yaw,n=60){for(let i=0;i<n;i++)p.update(1/60,yaw);}
-test('WASD follows the camera at arbitrary yaw, regardless of initial facing',()=>{
- for(const yaw of [0,.7,Math.PI,-1.2])for(const [f,r] of [[1,0],[-1,0],[0,1],[0,-1]]){
-  const p=player();p.heading=1.8;p.input.f=f;p.input.r=r;tick(p,yaw);
-  const direction=new THREE.Vector3(-Math.sin(yaw)*f+Math.cos(yaw)*r,0,-Math.cos(yaw)*f-Math.sin(yaw)*r);
-  assert.ok(p.position.dot(direction)>3);close(p.position.clone().cross(direction).length(),0);
-  assert.ok(new THREE.Vector3(Math.sin(p.heading),0,Math.cos(p.heading)).dot(direction)>.999);
+test('A/D turn ten degrees per 50 ms without translating at different frame rates',()=>{
+ for(const r of [-1,1])for(const dt of [.05,1/60,1/120]){
+  const p=player();p.heading=0;p.input.r=r;
+  for(let i=0;i<Math.round(.5/dt);i++)p.update(dt);
+  close(p.heading,-r*THREE.MathUtils.degToRad(100));close(p.position.length(),0);
+  p.input.r=0;const heading=p.heading;p.update(.05);close(p.heading,heading);
  }
 });
-test('diagonal speed is normalized and release stops movement',()=>{
- const a=player(),b=player();a.input.f=b.input.f=1;b.input.r=1;tick(a,0);tick(b,0);
- close(a.position.length(),b.position.length());b.input.f=b.input.r=0;
- const start=b.position.clone();tick(b,0);close(start.distanceTo(b.position),0);
+test('W/S move along facing independently of camera and A/D do not add speed',()=>{
+ for(const f of [-1,1]){
+  const p=player();p.heading=.7;p.input.f=f;tick(p,2.1);
+  const forward=new THREE.Vector3(Math.sin(.7),0,Math.cos(.7));
+  assert.ok(p.position.dot(forward)*f>3);close(p.position.clone().cross(forward).length(),0);close(p.heading,.7);
+ }
+ const a=player(),b=player();a.input.f=b.input.f=1;b.input.r=1;
+ tick(a,0);tick(b,0);close(a.speed,b.speed);
 });
-test('reversal follows input immediately and disabled input cannot move',()=>{
- const p=player();p.input.f=1;tick(p,0);let z=p.position.z;p.input.f=-1;p.update(1/60,0);assert.ok(p.position.z>z);
- p.enabled=false;const start=p.position.clone();tick(p,1);close(start.distanceTo(p.position),0);
+test('releasing W/S stops translation even while turning; disabled input is ignored',()=>{
+ const p=player();p.input.f=1;tick(p,0);p.input.f=0;p.input.r=1;
+ const position=p.position.clone();tick(p,0);close(position.distanceTo(p.position),0);
+ p.enabled=false;const heading=p.heading;tick(p,0);close(p.heading,heading);
 });
-test('camera follows position without a sideways steering loop; orbit and recenter work',()=>{
- const previous=globalThis.window;globalThis.window={addEventListener(){},innerWidth:1000};
- try{
-  const camera=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
-  const p=player();p.input.r=1;
-  for(let i=0;i<180;i++){p.update(1/60,camera.yaw);camera.update(1/60,p.position);}
-  close(camera.yaw,0);close(p.position.z,0);assert.ok(p.position.x>9);
-  camera.input.rotate=1;camera.update(1/60,p.position);assert.ok(camera.yaw<0);
-  camera.input.rotate=0;camera.resumeFollow(p.heading);
-  for(let i=0;i<120;i++)camera.update(1/60,p.position);
-  assert.ok(Math.abs(Math.atan2(Math.sin(camera.yaw-p.heading-Math.PI),Math.cos(camera.yaw-p.heading-Math.PI)))<.002);
-  camera.resumeFollow(0);camera.rotate(50,0);assert.equal(camera.recenterYaw,null);
- }finally{globalThis.window=previous;}
-});
-
 test('camera returns after four seconds and camera input resets the timer',()=>{
  const previous=globalThis.window;globalThis.window={addEventListener(){},innerWidth:1000};
  try{
@@ -54,12 +44,12 @@ test('camera returns after four seconds and camera input resets the timer',()=>{
   camera.input.rotate=0;camera.dragging=true;camera.update(5,pos,false,0);close(camera.cameraIdle,0);
  }finally{globalThis.window=previous;}
 });
-test('automatic return does not bend a held sideways movement into circles',()=>{
+test('automatic camera return does not steer the player',()=>{
  const previous=globalThis.window;globalThis.window={addEventListener(){},innerWidth:1000};
  try{
   const camera=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
-  const p=player();p.input.r=1;
-  for(let i=0;i<600;i++){p.update(1/60,camera.getMovementYaw(p.input));camera.update(1/60,p.position,false,p.heading);}
-  assert.ok(Math.abs(p.position.z)<.2);assert.ok(p.position.x>30);
+  const p=player();p.heading=.7;p.input.f=1;
+  for(let i=0;i<600;i++){p.update(1/60);camera.update(1/60,p.position,false,p.heading);}
+  close(p.heading,.7);close(p.position.x*Math.cos(.7)-p.position.z*Math.sin(.7),0);
  }finally{globalThis.window=previous;}
 });

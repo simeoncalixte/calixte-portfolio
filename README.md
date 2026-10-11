@@ -16,9 +16,9 @@ npm run preview  # serve dist/
 ## Controls
 | Input | Action |
 |---|---|
-| `W A S D` | camera-relative movement; character faces the movement direction |
-| `← →` / `↑ ↓` | rotate / tilt camera; orbit camera independently while following player position |
-| `C` | center camera behind the player |
+| `W A S D` | walk (camera-relative; held direction stays stable during automatic follow) |
+| `← →` / `↑ ↓` | rotate / tilt camera; holds the chosen angle while following the player |
+| `C` | resume automatic camera follow from behind |
 | `Shift` | run |
 | `Space` | jump |
 | mouse drag / click to lock | look around · wheel to zoom |

@@ -4,7 +4,7 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 const GRAVITY = -24;
 const JUMP_V = 7.2;
 export const WALK = 3.4, RUN = 7.6;
-const _move = new THREE.Vector3();
+const _fwd = new THREE.Vector3(), _right = new THREE.Vector3(), _move = new THREE.Vector3();
 
 /**
  * Third-person adventurer. The Quaternius rig ships Idle/Walk/Run; the jump is
@@ -123,29 +123,33 @@ export class Player {
     this.fadeTo(a, 0.2);
   }
 
-  /** Camera-relative movement; visual facing follows input without steering the camera. */
-  update(dt, cameraYaw = 0) {
+  /** @param cameraYaw yaw of the follow camera, so W moves away from it. */
+  update(dt, cameraYaw) {
     const inp = this.input;
-    const f = this.enabled ? THREE.MathUtils.clamp(inp.f,-1,1) : 0;
-    const r = this.enabled ? THREE.MathUtils.clamp(inp.r,-1,1) : 0;
-    _move.set(-Math.sin(cameraYaw)*f+Math.cos(cameraYaw)*r,0,-Math.cos(cameraYaw)*f-Math.sin(cameraYaw)*r);
-    const strength=Math.min(1,_move.length());
-    const moving=strength>.01;
-    if(moving)_move.normalize();
+    let f = this.enabled ? inp.f : 0, r = this.enabled ? inp.r : 0;
+    const len = Math.hypot(f, r);
+    if (len > 1) { f /= len; r /= len; }
+
+    _fwd.set(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw));
+    _right.set(-_fwd.z, 0, _fwd.x);
+    _move.set(0, 0, 0).addScaledVector(_fwd, f).addScaledVector(_right, r);
+    const moving = _move.lengthSq() > 0.01;
     if(this.enabled)this.ghostSlowdown=Math.max(0,(this.ghostSlowdown||0)-dt);
-    const target=moving?strength*(inp.run?RUN:WALK)*(this.ghostSlowdown>0?.45:1):0;
-    if(!moving)this.speed=0;
-    this.speed+=(target-this.speed)*(1-Math.exp(-dt*10));
-    if(moving){
-      const desired=Math.atan2(_move.x,_move.z),delta=desired-this.heading;
-      this.heading+=Math.atan2(Math.sin(delta),Math.cos(delta))*(1-Math.exp(-dt*15));
-      this.oneShot=null;
+    const target = moving ? (inp.run ? RUN : WALK)*(this.ghostSlowdown>0?.45:1) : 0;
+    this.speed += (target - this.speed) * Math.min(1, dt * (moving ? 8 : 10));
+
+    if (moving) {
+      const want = Math.atan2(_move.x, _move.z);
+      let d = want - this.heading;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      this.heading += d * Math.min(1, dt * 12);
+      if (this.oneShot) { this.oneShot = null; }
     }
-    this.root.rotation.y=this.heading;
-    // Travel follows input immediately, not the model's turning arc. This keeps
-    // narrow crossings precise and makes reversals stop pushing the old way.
-    const step=this.speed*dt*(this.grounded?1:.95);
-    const dx=_move.x*step,dz=_move.z*step;
+    this.root.rotation.y = this.heading;
+
+    // horizontal motion along the facing direction (smooth turning arcs)
+    const step = this.speed * dt * (this.grounded ? 1 : 0.95);
+    const dx = Math.sin(this.heading) * step, dz = Math.cos(this.heading) * step;
     const feetY = this.position.y;
     const res = this.walk.move(this.position, dx, dz, feetY);
     const moved = Math.hypot(res.x - this.position.x, res.z - this.position.z);
@@ -213,8 +217,6 @@ export class Player {
  * Keeps itself above the terrain beneath it.
  */
 export class FollowCamera {
-  get keyboardDelayRemaining() { return Math.max(0,6-this.cameraIdle); }
-
   constructor(camera, dom, walk) {
     this.camera = camera;
     this.walk = walk;
@@ -228,9 +230,8 @@ export class FollowCamera {
     this.enabled = true;
     this.dragging = false;
     this.manual = false;
-    this.cameraIdle = 0;
-    this.movementYaw = null;
     this.input = { rotate: 0, tilt: 0 };
+    this.movementYaw = null;
 
     dom.addEventListener('pointerdown', (e) => {
       if (!this.enabled || window.__editorActive) return;
@@ -244,30 +245,27 @@ export class FollowCamera {
       if (!this.enabled || window.__editorActive) return;
       if (document.pointerLockElement === dom || (this.dragging && e.pointerId === this.dragId)) this.rotate(e.movementX * (e.pointerType === 'touch' ? 1.6 : 1), e.movementY * (e.pointerType === 'touch' ? 1.6 : 1));
     });
-    dom.addEventListener('wheel', (e) => {
-      if (!this.enabled || window.__editorActive) return;
-      this.cameraIdle=0;this.recenterYaw=null;this.movementYaw=null;
-      this.targetDist = THREE.MathUtils.clamp(this.targetDist + e.deltaY * 0.006, 2.5, 16);
-    }, { passive: true });
+    dom.addEventListener('wheel', (e) => { this.targetDist = THREE.MathUtils.clamp(this.targetDist + e.deltaY * 0.006, 2.5, 16); }, { passive: true });
     dom.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
   rotate(mx, my) {
     if (!mx && !my) return;
     this.manual = true;
-    this.cameraIdle = 0;
-    this.movementYaw = null;
-    this.recenterYaw = null;
     this.yaw -= mx * 0.0032;
     this.pitch = THREE.MathUtils.clamp(this.pitch + my * 0.0026, -0.35, 1.2);
   }
 
-  resumeFollow(heading) {
+  resumeFollow() {
     this.manual = false;
-    this.cameraIdle=0;
-    this.movementYaw=null;
-    this.recenterYaw = heading === undefined ? null : heading + Math.PI;
     this.pitch = 0.22;
+  }
+
+  // Keep a held movement direction stable while the automatic camera turns.
+  getMovementYaw(input) {
+    if (!input.f && !input.r) this.movementYaw = null;
+    else if (this.manual || this.movementYaw === null) this.movementYaw = this.yaw;
+    return this.movementYaw ?? this.yaw;
   }
 
   snap(playerPos) {
@@ -275,37 +273,12 @@ export class FollowCamera {
     this.update(1, playerPos, true);
   }
 
-  getMovementYaw(input) {
-    const changed=input.f!==this.lastMoveF || input.r!==this.lastMoveR;
-    if (!input.f && !input.r) this.movementYaw=null;
-    else if (changed || ((this.cameraIdle>=6 || this.recenterYaw!=null) && this.movementYaw==null)) {
-      // A new combination (W -> W+D -> D) starts from the current view,
-      // not the camera angle captured before its automatic return.
-      this.movementYaw=this.yaw;
-    }
-    // Manual orbit should steer continuously, including while keys stay held.
-    if(this.cameraIdle<6 && this.recenterYaw==null)this.movementYaw=null;
-    this.lastMoveF=input.f;this.lastMoveR=input.r;
-    return this.movementYaw ?? this.yaw;
-  }
-
   update(dt, playerPos, instant = false, heading) {
     if (this.enabled && !window.__editorActive) {
       this.rotate(this.input.rotate * 420 * dt, this.input.tilt * 340 * dt);
-      if (this.dragging || this.input.rotate || this.input.tilt) this.cameraIdle=0;
-      else if (!instant) this.cameraIdle+=dt;
-      if(this.cameraIdle>=6 && heading!==undefined){
-        if(this.movementYaw==null)this.movementYaw=this.yaw;
-        this.manual=false;
-        this.recenterYaw=heading+Math.PI;
-      }
-      // Follow position, not character yaw: otherwise camera-relative movement
-      // creates a feedback loop when moving sideways or toward the camera.
-      if (this.recenterYaw != null) {
-        const delta=this.recenterYaw-this.yaw;
-        const angle=Math.atan2(Math.sin(delta),Math.cos(delta));
-        this.yaw+=angle*(instant?1:1-Math.exp(-dt*10));
-        if(Math.abs(angle)<.001)this.recenterYaw=null;
+      if (!this.manual && heading !== undefined) {
+        const delta = heading + Math.PI - this.yaw;
+        this.yaw += Math.atan2(Math.sin(delta), Math.cos(delta)) * (instant ? 1 : 1 - Math.exp(-dt * 5));
       }
     }
     this.target.copy(playerPos).y += 1.55;

@@ -263,11 +263,10 @@ export class FollowCamera {
 
   update(dt, playerPos, instant = false, heading, turning = 0) {
     if (this.enabled && !window.__editorActive) {
-      this.rotate(this.input.rotate * 420 * dt, this.input.tilt * 340 * dt);
       // Steering makes the player the reference again, even after free look.
       // Preserve the chosen pitch and zoom; only bring yaw behind the player.
-      const cameraInput = this.input.rotate !== 0 || this.input.tilt !== 0;
-      if (Math.abs(turning) > .01 && !cameraInput) this.manual = false;
+      if (Math.abs(turning) > .01) this.manual = false;
+      else this.rotate(this.input.rotate * 420 * dt, this.input.tilt * 340 * dt);
       if (!this.manual && heading !== undefined) {
         const delta = heading + Math.PI - this.yaw;
         this.yaw += Math.atan2(Math.sin(delta), Math.cos(delta)) * (instant ? 1 : 1 - Math.exp(-dt * 10));

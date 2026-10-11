@@ -274,8 +274,16 @@ export class FollowCamera {
   }
 
   getMovementYaw(input) {
+    const changed=input.f!==this.lastMoveF || input.r!==this.lastMoveR;
     if (!input.f && !input.r) this.movementYaw=null;
-    else if ((this.cameraIdle>=4 || this.recenterYaw!=null) && this.movementYaw==null) this.movementYaw=this.yaw;
+    else if (changed || ((this.cameraIdle>=4 || this.recenterYaw!=null) && this.movementYaw==null)) {
+      // A new combination (W -> W+D -> D) starts from the current view,
+      // not the camera angle captured before its automatic return.
+      this.movementYaw=this.yaw;
+    }
+    // Manual orbit should steer continuously, including while keys stay held.
+    if(this.cameraIdle<4 && this.recenterYaw==null)this.movementYaw=null;
+    this.lastMoveF=input.f;this.lastMoveR=input.r;
     return this.movementYaw ?? this.yaw;
   }
 

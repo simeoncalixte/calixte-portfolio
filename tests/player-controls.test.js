@@ -63,3 +63,24 @@ test('automatic return does not bend a held sideways movement into circles',()=>
   assert.ok(Math.abs(p.position.z)<.2);assert.ok(p.position.x>30);
  }finally{globalThis.window=previous;}
 });
+
+test('changing held key combinations uses the current camera after automatic return',()=>{
+ const previous=globalThis.window;globalThis.window={addEventListener(){},innerWidth:1000};
+ try{
+  const camera=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
+  const p=player();p.input.f=1;camera.yaw=0;camera.cameraIdle=5;
+  close(camera.getMovementYaw(p.input),0);
+  camera.yaw=1.1;
+  for(const [f,r] of [[1,1],[0,1],[1,-1],[-1,-1],[-1,1],[1,0]]){
+   p.input.f=f;p.input.r=r;
+   const yaw=camera.getMovementYaw(p.input);close(yaw,camera.yaw);
+   const start=p.position.clone();p.update(1/60,yaw);
+   const step=p.position.clone().sub(start).normalize();
+   const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+   const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+   const magnitude=Math.hypot(f,r);
+   close(step.dot(forward),f/magnitude);close(step.dot(right),r/magnitude);
+   camera.yaw+=.2;
+  }
+ }finally{globalThis.window=previous;}
+});

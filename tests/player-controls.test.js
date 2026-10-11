@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { Player, TURN_SPEED } from '../src/player/player.js';
+import { Player, FollowCamera, TURN_SPEED } from '../src/player/player.js';
 function player(){
  const scene=new THREE.Group();
  const animations=['Idle','Walk','Run','Wave','Interact'].map(name=>new THREE.AnimationClip(name,1,[]));
@@ -33,4 +33,22 @@ test('camera orbit cannot steer movement and releasing keys stops drift',()=>{
 test('S reverses immediately without spinning or continuing forward',()=>{
  const p=player();p.heading=.6;p.input.f=1;tick(p);const start=p.position.clone();
  p.input.f=-1;tick(p,1);assert.ok(p.position.clone().sub(start).dot(new THREE.Vector3(Math.sin(.6),0,Math.cos(.6)))<0);close(p.heading,.6);
+});
+
+test('turning resumes camera follow after free look and settles behind the player',()=>{
+ const previous=globalThis.window;
+ globalThis.window={addEventListener(){},innerWidth:1000};
+ try{
+  const follow=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
+  const p=player();p.heading=0;follow.yaw=Math.PI;follow.pitch=.4;
+  follow.rotate(200,0);assert.equal(follow.manual,true);
+  const orbitYaw=follow.yaw;follow.update(1/60,p.position,false,p.heading,0);close(follow.yaw,orbitYaw);
+  p.input.r=1;
+  for(let i=0;i<120;i++){p.update(1/60);follow.update(1/60,p.position,false,p.heading,p.input.r);}
+  assert.equal(follow.manual,false);close(follow.pitch,.4);
+  const error=()=>Math.atan2(Math.sin(follow.yaw-p.heading-Math.PI),Math.cos(follow.yaw-p.heading-Math.PI));
+  assert.ok(Math.abs(error())<.25,'camera stays close behind during sustained turns');
+  p.input.r=0;for(let i=0;i<90;i++)follow.update(1/60,p.position,false,p.heading,0);
+  assert.ok(Math.abs(error())<1e-5,'camera finishes centering after releasing the turn');
+ }finally{globalThis.window=previous;}
 });

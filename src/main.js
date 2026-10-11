@@ -241,7 +241,7 @@ function frame() {
     player.enabled = !editing;
     follow.enabled = !editing;
     player.update(dt);
-    if (!editing) follow.update(dt, player.position, false, player.heading);
+    if (!editing) follow.update(dt, player.position, false, player.heading, player.input.r);
     updateAtmosphere(dt, player.position);
     // shadow frustum follows the player (texel-snapped to avoid shimmering)
     const tgt = player.position;

@@ -17,8 +17,8 @@ npm run preview  # serve dist/
 | Input | Action |
 |---|---|
 | `W / S` | move forward / backward relative to the player’s facing direction |
-| `A / D` | turn left / right, including while standing still |
-| `← →` / `↑ ↓` | rotate / tilt camera; holds the chosen angle while following the player |
+| `A / D` | turn left / right; camera smoothly returns behind the player |
+| `← →` / `↑ ↓` | rotate / tilt camera; free look until A/D turning resumes follow |
 | `C` | resume automatic camera follow from behind |
 | `Shift` | run |
 | `Space` | jump |

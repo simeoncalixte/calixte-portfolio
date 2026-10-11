@@ -226,6 +226,8 @@ export class FollowCamera {
     this.enabled = true;
     this.dragging = false;
     this.manual = false;
+    this.cameraIdle = 0;
+    this.movementYaw = null;
     this.input = { rotate: 0, tilt: 0 };
 
     dom.addEventListener('pointerdown', (e) => {
@@ -240,13 +242,19 @@ export class FollowCamera {
       if (!this.enabled || window.__editorActive) return;
       if (document.pointerLockElement === dom || (this.dragging && e.pointerId === this.dragId)) this.rotate(e.movementX * (e.pointerType === 'touch' ? 1.6 : 1), e.movementY * (e.pointerType === 'touch' ? 1.6 : 1));
     });
-    dom.addEventListener('wheel', (e) => { this.targetDist = THREE.MathUtils.clamp(this.targetDist + e.deltaY * 0.006, 2.5, 16); }, { passive: true });
+    dom.addEventListener('wheel', (e) => {
+      if (!this.enabled || window.__editorActive) return;
+      this.cameraIdle=0;this.recenterYaw=null;this.movementYaw=null;
+      this.targetDist = THREE.MathUtils.clamp(this.targetDist + e.deltaY * 0.006, 2.5, 16);
+    }, { passive: true });
     dom.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
   rotate(mx, my) {
     if (!mx && !my) return;
     this.manual = true;
+    this.cameraIdle = 0;
+    this.movementYaw = null;
     this.recenterYaw = null;
     this.yaw -= mx * 0.0032;
     this.pitch = THREE.MathUtils.clamp(this.pitch + my * 0.0026, -0.35, 1.2);
@@ -254,6 +262,8 @@ export class FollowCamera {
 
   resumeFollow(heading) {
     this.manual = false;
+    this.cameraIdle=0;
+    this.movementYaw=null;
     this.recenterYaw = heading === undefined ? null : heading + Math.PI;
     this.pitch = 0.22;
   }
@@ -263,9 +273,22 @@ export class FollowCamera {
     this.update(1, playerPos, true);
   }
 
-  update(dt, playerPos, instant = false) {
+  getMovementYaw(input) {
+    if (!input.f && !input.r) this.movementYaw=null;
+    else if ((this.cameraIdle>=4 || this.recenterYaw!=null) && this.movementYaw==null) this.movementYaw=this.yaw;
+    return this.movementYaw ?? this.yaw;
+  }
+
+  update(dt, playerPos, instant = false, heading) {
     if (this.enabled && !window.__editorActive) {
       this.rotate(this.input.rotate * 420 * dt, this.input.tilt * 340 * dt);
+      if (this.dragging || this.input.rotate || this.input.tilt) this.cameraIdle=0;
+      else if (!instant) this.cameraIdle+=dt;
+      if(this.cameraIdle>=4 && heading!==undefined){
+        if(this.movementYaw==null)this.movementYaw=this.yaw;
+        this.manual=false;
+        this.recenterYaw=heading+Math.PI;
+      }
       // Follow position, not character yaw: otherwise camera-relative movement
       // creates a feedback loop when moving sideways or toward the camera.
       if (this.recenterYaw != null) {

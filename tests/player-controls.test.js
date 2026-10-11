@@ -39,3 +39,27 @@ test('camera follows position without a sideways steering loop; orbit and recent
   camera.resumeFollow(0);camera.rotate(50,0);assert.equal(camera.recenterYaw,null);
  }finally{globalThis.window=previous;}
 });
+
+test('camera returns after four seconds and camera input resets the timer',()=>{
+ const previous=globalThis.window;globalThis.window={addEventListener(){},innerWidth:1000};
+ try{
+  const camera=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
+  const pos=new THREE.Vector3();camera.rotate(100,0);const yaw=camera.yaw;
+  for(let i=0;i<239;i++)camera.update(1/60,pos,false,0);
+  close(camera.yaw,yaw);
+  for(let i=0;i<120;i++)camera.update(1/60,pos,false,0);
+  assert.ok(Math.abs(Math.atan2(Math.sin(camera.yaw-Math.PI),Math.cos(camera.yaw-Math.PI)))<.002);
+  camera.rotate(80,0);const changed=camera.yaw;camera.update(3.9,pos,false,0);close(camera.yaw,changed);
+  camera.input.rotate=1;camera.update(1/60,pos,false,0);close(camera.cameraIdle,0);
+  camera.input.rotate=0;camera.dragging=true;camera.update(5,pos,false,0);close(camera.cameraIdle,0);
+ }finally{globalThis.window=previous;}
+});
+test('automatic return does not bend a held sideways movement into circles',()=>{
+ const previous=globalThis.window;globalThis.window={addEventListener(){},innerWidth:1000};
+ try{
+  const camera=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
+  const p=player();p.input.r=1;
+  for(let i=0;i<600;i++){p.update(1/60,camera.getMovementYaw(p.input));camera.update(1/60,p.position,false,p.heading);}
+  assert.ok(Math.abs(p.position.z)<.2);assert.ok(p.position.x>30);
+ }finally{globalThis.window=previous;}
+});

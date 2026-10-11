@@ -1,0 +1,52 @@
+/** Interests and possible applications, rather than claims of completed projects. */
+export const INTEREST_VERTICALS = [
+  {
+    id: 'insurance', title: 'Insurance', color: '#69d9df', model: 'insuranceShield',
+    angle: Math.PI * .75, subtitle: 'Clarity. Confidence. Protection.',
+    description: "I'm interested in how software can make insurance easier to understand and navigate, from reading policy documents to following a claim.",
+    topics: ['Document intelligence', 'Claims workflows', 'Clear customer experiences'],
+    ideas: ['Turn policy and claim documents into structured, traceable information.', 'Help people understand what information is needed and what happens next.', 'Give reviewers clear evidence and a way to check automated results.'],
+    modelName: 'Shield', author: 'sirkitree', source: 'https://poly.pizza/m/5x3TxeymSgO',
+  },
+  {
+    id: 'education', title: 'Education', color: '#ffc570', model: 'educationCap',
+    angle: Math.PI * 1.25, subtitle: 'Curiosity. Practice. Progress.',
+    description: "I'm interested in software that helps people learn and gives educators more time to teach. My experience as an instructor shapes that interest.",
+    topics: ['Learning experiences', 'Educator tools', 'Useful feedback'],
+    ideas: ['Make complex ideas easier to explore through interactive learning.', 'Help educators organize resources and understand where learners need support.', 'Build feedback and practice experiences that make progress visible.'],
+    modelName: 'Graduation cap', author: 'Poly by Google', source: 'https://poly.pizza/m/4v0sRFH6PN9',
+  },
+  {
+    id: 'finance', title: 'Finance', color: '#86e4ac', model: 'financeCoins',
+    angle: Math.PI * .25, subtitle: 'Understanding. Trust. Control.',
+    description: "I'm interested in financial software that makes complex information easier to understand and everyday tasks easier to manage.",
+    topics: ['Financial data', 'Payment experiences', 'Clear reporting'],
+    ideas: ['Present financial activity in clear, useful dashboards.', 'Make payment and reconciliation workflows easier to follow.', 'Build dependable integrations with transparent records and permissions.'],
+    modelName: 'Coin Piles', author: 'Quaternius', source: 'https://poly.pizza/m/9OWkKczINo',
+    license: 'CC0', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+  },
+  {
+    id: 'gaming', title: 'Gaming', color: '#d59aff', model: 'gamingController',
+    angle: Math.PI * 1.75, subtitle: 'Play. Discovery. Connection.',
+    description: "I'm interested in gaming as a space for interactive experiences, creativity, and bringing people together.",
+    topics: ['Interactive worlds', 'Player experiences', 'Connected services'],
+    ideas: ['Build responsive, approachable interfaces for players.', 'Explore worlds and mechanics that reward curiosity.', 'Connect player experiences with dependable online services.'],
+    modelName: 'Videogame Controller', author: 'Poly by Google', source: 'https://poly.pizza/m/6365MG_Pr_f',
+  },
+  {
+    id: 'saas', title: 'SaaS', color: '#7dafff', model: 'saasServer',
+    angle: Math.PI * .5, subtitle: 'Software as a Service',
+    description: "I'm interested in building software services that help people do useful work, with thoughtful interfaces and reliable delivery.",
+    topics: ['Product experiences', 'Business workflows', 'Cloud services'],
+    ideas: ['Turn recurring business tasks into straightforward product workflows.', 'Design onboarding and collaboration that help teams get started.', 'Build maintainable services with clear access controls and integrations.'],
+    modelName: 'server rack', author: 'Jeremy Eyring', source: 'https://poly.pizza/m/6ijQclm8jxw',
+  },
+  {
+    id: 'aiaas', title: 'AI as a Service', color: '#ff9b8c', model: 'aiRobot',
+    angle: Math.PI * 1.5, subtitle: 'Intelligence. Context. Oversight.',
+    description: "I'm interested in making AI capabilities useful through services that fit into real products and keep people in control.",
+    topics: ['AI integrations', 'Document intelligence', 'Human review'],
+    ideas: ['Connect AI capabilities to existing applications through clear APIs.', 'Use relevant documents and source evidence to support useful responses.', 'Evaluate output quality and give people ways to review and correct results.'],
+    modelName: 'Robot', author: 'Poly by Google', source: 'https://poly.pizza/m/9A6cuitiB_4',
+  },
+];

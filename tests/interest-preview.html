@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Interest native scene preview</title><style>body{margin:0}canvas{display:block}</style></head><body><script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
+import {createInterestObservatory} from '../src/world/interestIsland.js';
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color('#354258');
+scene.add(new THREE.HemisphereLight('#eaf0ff','#77715a',2));
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.1,200);camera.position.set(24,22,30);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,7,0);controls.update();
+const built=createInterestObservatory();scene.add(built.group);const clock=new THREE.Clock();
+renderer.setAnimationLoop(()=>{built.group.userData.update(clock.getElapsedTime());renderer.render(scene,camera);});
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
+</script></body></html>

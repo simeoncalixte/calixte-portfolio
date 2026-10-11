@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Interest industry exhibits</title><style>body{margin:0;background:#354258;color:white;font:16px system-ui}header{position:fixed;top:20px;left:24px}button{padding:10px 20px;margin-right:8px}canvas{display:block}</style></head><body><header><h1>Interest island · industries</h1><div id="exhibits"></div><p id="status">Loading models…</p></header><script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
+import {INTEREST_VERTICALS} from '../src/interests.js';
+import {loadModel} from '../src/core/assets.js';
+import {createInterestVerticals} from '../src/world/interestVerticals.js';
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color('#354258');scene.add(new THREE.HemisphereLight('#eaf0ff','#77715a',2));
+const light=new THREE.DirectionalLight('#ffe1af',3);scene.add(light);
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.1,200);const controls=new OrbitControls(camera,renderer.domElement);
+try {
+ const models=await Promise.all(INTEREST_VERTICALS.map(async area=>[area.model,(await loadModel(area.model)).scene]));
+ const built=createInterestVerticals(Object.fromEntries(models));scene.add(built.group);
+ function focus(id){const station=built.stations.find(s=>s.area.id===id).station;camera.position.copy(station.localToWorld(new THREE.Vector3(5,5,9)));controls.target.copy(station.position).add(new THREE.Vector3(0,2,0));light.position.copy(station.position).add(new THREE.Vector3(3,8,4));controls.update();document.querySelector('#status').textContent=id+' · drag to orbit';}
+ for(const {area} of built.stations){const button=document.createElement('button');button.textContent=area.title;button.onclick=()=>focus(area.id);document.querySelector('#exhibits').appendChild(button);}
+ focus('insurance');renderer.setAnimationLoop(()=>renderer.render(scene,camera));
+} catch(e){document.querySelector('#status').textContent=e.stack;}
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
+</script></body></html>

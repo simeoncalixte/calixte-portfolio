@@ -1,0 +1,62 @@
+[
+  {
+    "file": "shield.glb",
+    "title": "Shield",
+    "author": "sirkitree",
+    "source": "https://poly.pizza/m/5x3TxeymSgO",
+    "download": "https://static.poly.pizza/49e23baa-0ec7-42c0-8e0e-85ca43464102.glb",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "changes": "Scene display scale and placement only"
+  },
+  {
+    "file": "graduation-cap.glb",
+    "title": "Graduation cap",
+    "author": "Poly by Google",
+    "source": "https://poly.pizza/m/4v0sRFH6PN9",
+    "download": "https://static.poly.pizza/9f23cae1-ba56-4795-86c1-fa6837a6f38c.glb",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "changes": "Scene display scale and placement only"
+  },
+  {
+    "file": "coin-piles.glb",
+    "title": "Coin Piles",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/9OWkKczINo",
+    "download": "https://static.poly.pizza/af8eccc6-bc94-4a31-a4dd-a2d2a1755735.glb",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "changes": "Scene display scale and placement only"
+  },
+  {
+    "file": "controller.glb",
+    "title": "Videogame Controller",
+    "author": "Poly by Google",
+    "source": "https://poly.pizza/m/6365MG_Pr_f",
+    "download": "https://static.poly.pizza/7c2fa4e9-4287-4f5f-8399-181ace7af858.glb",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "changes": "Scene display scale and placement only"
+  },
+  {
+    "file": "server-rack.glb",
+    "title": "server rack",
+    "author": "Jeremy Eyring",
+    "source": "https://poly.pizza/m/6ijQclm8jxw",
+    "download": "https://static.poly.pizza/a9b585dc-68f4-4a3b-a6b2-ec729cb92aa3.glb",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "changes": "Scene display scale and placement only"
+  },
+  {
+    "file": "robot.glb",
+    "title": "Robot",
+    "author": "Poly by Google",
+    "source": "https://poly.pizza/m/9A6cuitiB_4",
+    "download": "https://static.poly.pizza/85a95cc6-99dc-4522-a79f-fcf04c308f1e.glb",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "changes": "Scene display scale and placement only"
+  }
+]

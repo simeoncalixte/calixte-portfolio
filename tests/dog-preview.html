@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Mastiff dog preview</title>
+<style>body{margin:0;background:#28303a;color:#eee;font:16px system-ui}header{position:fixed;top:20px;left:24px;z-index:1}button{padding:10px 20px;margin-right:8px}p{max-width:650px}canvas{display:block}</style></head><body>
+<header><h1>Mastiff dog</h1><p>Wildfire Games · CC BY-SA 3.0 · Drag to orbit</p><button data-speed="0">Idle</button><button data-speed="2.72">Hunt</button><button data-speed="6.08">Chase</button><p id="status">Loading…</p></header>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { createDogModel } from '../src/world/dogModel.js';
+const status=document.querySelector('#status');
+window.addEventListener('error',e=>status.textContent=e.message);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.toneMapping=THREE.ACESFilmicToneMapping;document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color('#28303a');
+const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.1,100);camera.position.set(2.8,1.6,3);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,.55,0);controls.update();
+scene.add(new THREE.HemisphereLight('#dae7ff','#5b4933',2));
+const light=new THREE.DirectionalLight('#ffddae',3);light.position.set(3,7,4);light.castShadow=true;scene.add(light);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:'#4c555b',roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.03;ground.receiveShadow=true;scene.add(ground);
+let speed=0;document.querySelectorAll('button').forEach(b=>b.onclick=()=>speed=Number(b.dataset.speed));
+try{
+ const gltf=await new GLTFLoader().loadAsync('/assets/character/dog/mastiff.glb');const dog=createDogModel(gltf);scene.add(dog);
+ const clock=new THREE.Clock();renderer.setAnimationLoop(()=>{const dt=Math.min(clock.getDelta(),.05);dog.userData.animate(dt,speed);status.textContent=`Loaded · ${dog.userData.animationState()} · ${gltf.animations.length} animation clips`;renderer.render(scene,camera);});
+}catch(e){status.textContent=e.stack;}
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script></body></html>

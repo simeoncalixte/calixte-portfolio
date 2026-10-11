@@ -52,3 +52,23 @@ test('turning resumes camera follow after free look and settles behind the playe
   assert.ok(Math.abs(error())<1e-5,'camera finishes centering after releasing the turn');
  }finally{globalThis.window=previous;}
 });
+
+test('arrow camera controls take priority over simultaneous player turning',()=>{
+ const previous=globalThis.window;
+ globalThis.window={addEventListener(){},innerWidth:1000};
+ try{
+  for(const input of [{rotate:1,tilt:0},{rotate:0,tilt:1}]){
+   const follow=new FollowCamera(new THREE.PerspectiveCamera(),{addEventListener(){}},{floors:()=>[]});
+   follow.yaw=1;follow.input=input;
+   follow.update(1/60,new THREE.Vector3(),false,0,1);
+   assert.equal(follow.manual,true);
+   close(follow.yaw,1-input.rotate*420/60*.0032);
+   follow.input={rotate:0,tilt:0};
+   const yaw=follow.yaw;
+   follow.update(1/60,new THREE.Vector3(),false,0,0);
+   close(follow.yaw,yaw); // Released camera controls retain their chosen view.
+   follow.update(1/60,new THREE.Vector3(),false,0,1);
+   assert.equal(follow.manual,false); // Steering alone resumes follow.
+  }
+ }finally{globalThis.window=previous;}
+});

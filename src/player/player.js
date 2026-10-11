@@ -266,7 +266,8 @@ export class FollowCamera {
       this.rotate(this.input.rotate * 420 * dt, this.input.tilt * 340 * dt);
       // Steering makes the player the reference again, even after free look.
       // Preserve the chosen pitch and zoom; only bring yaw behind the player.
-      if (Math.abs(turning) > .01) this.manual = false;
+      const cameraInput = this.input.rotate !== 0 || this.input.tilt !== 0;
+      if (Math.abs(turning) > .01 && !cameraInput) this.manual = false;
       if (!this.manual && heading !== undefined) {
         const delta = heading + Math.PI - this.yaw;
         this.yaw += Math.atan2(Math.sin(delta), Math.cos(delta)) * (instant ? 1 : 1 - Math.exp(-dt * 10));

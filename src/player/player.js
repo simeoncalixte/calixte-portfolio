@@ -4,7 +4,7 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 const GRAVITY = -24;
 const JUMP_V = 7.2;
 export const WALK = 3.4, RUN = 7.6;
-export const TURN_SPEED = 2.4;
+const _move = new THREE.Vector3();
 
 /**
  * Third-person adventurer. The Quaternius rig ships Idle/Walk/Run; the jump is
@@ -123,28 +123,29 @@ export class Player {
     this.fadeTo(a, 0.2);
   }
 
-  /** W/S move in the player's frame; A/D turn independently of the camera. */
-  update(dt) {
+  /** Camera-relative movement; visual facing follows input without steering the camera. */
+  update(dt, cameraYaw = 0) {
     const inp = this.input;
     const f = this.enabled ? THREE.MathUtils.clamp(inp.f,-1,1) : 0;
     const r = this.enabled ? THREE.MathUtils.clamp(inp.r,-1,1) : 0;
-    this.heading -= r * TURN_SPEED * dt;
-    this.heading = Math.atan2(Math.sin(this.heading),Math.cos(this.heading));
-    const moving = Math.abs(f) > .01;
+    _move.set(-Math.sin(cameraYaw)*f+Math.cos(cameraYaw)*r,0,-Math.cos(cameraYaw)*f-Math.sin(cameraYaw)*r);
+    const strength=Math.min(1,_move.length());
+    const moving=strength>.01;
+    if(moving)_move.normalize();
     if(this.enabled)this.ghostSlowdown=Math.max(0,(this.ghostSlowdown||0)-dt);
-    const target = moving ? f*(inp.run ? RUN : WALK)*(this.ghostSlowdown>0?.45:1) : 0;
-    // Stop on release and brake before reversing, without drifting while turning.
-    if(!moving || this.speed*target<0)this.speed=0;
-    this.speed += (target - this.speed) * Math.min(1, dt * (moving ? 8 : 10));
-
-    if (moving) {
-      if (this.oneShot) { this.oneShot = null; }
+    const target=moving?strength*(inp.run?RUN:WALK)*(this.ghostSlowdown>0?.45:1):0;
+    if(!moving)this.speed=0;
+    this.speed+=(target-this.speed)*(1-Math.exp(-dt*10));
+    if(moving){
+      const desired=Math.atan2(_move.x,_move.z),delta=desired-this.heading;
+      this.heading+=Math.atan2(Math.sin(delta),Math.cos(delta))*(1-Math.exp(-dt*15));
+      this.oneShot=null;
     }
-    this.root.rotation.y = this.heading;
-
-    // horizontal motion along the facing direction (smooth turning arcs)
-    const step = this.speed * dt * (this.grounded ? 1 : 0.95);
-    const dx = Math.sin(this.heading) * step, dz = Math.cos(this.heading) * step;
+    this.root.rotation.y=this.heading;
+    // Travel follows input immediately, not the model's turning arc. This keeps
+    // narrow crossings precise and makes reversals stop pushing the old way.
+    const step=this.speed*dt*(this.grounded?1:.95);
+    const dx=_move.x*step,dz=_move.z*step;
     const feetY = this.position.y;
     const res = this.walk.move(this.position, dx, dz, feetY);
     const moved = Math.hypot(res.x - this.position.x, res.z - this.position.z);
@@ -190,9 +191,8 @@ export class Player {
       if (v > 5) this.fadeTo(this.actions.run, 0.2);
       else if (v > 0.5) this.fadeTo(this.actions.walk, 0.2);
       else this.fadeTo(this.actions.idle, 0.3);
-      const direction=this.speed<0?-1:1;
-      this.actions.walk.timeScale = direction*THREE.MathUtils.clamp(v / WALK, 0.6, 1.4);
-      this.actions.run.timeScale = direction*THREE.MathUtils.clamp(v / RUN, 0.7, 1.2) * 1.05;
+      this.actions.walk.timeScale = THREE.MathUtils.clamp(v / WALK, 0.6, 1.4);
+      this.actions.run.timeScale = THREE.MathUtils.clamp(v / RUN, 0.7, 1.2) * 1.05;
     }
     this.mixer.update(dt);
     if (this.packGlow) this.packGlow.color.setRGB(0.31, 0.85, 0.94).multiplyScalar(2.0 + Math.sin(performance.now() * 0.003) * 0.4);
@@ -247,12 +247,14 @@ export class FollowCamera {
   rotate(mx, my) {
     if (!mx && !my) return;
     this.manual = true;
+    this.recenterYaw = null;
     this.yaw -= mx * 0.0032;
     this.pitch = THREE.MathUtils.clamp(this.pitch + my * 0.0026, -0.35, 1.2);
   }
 
-  resumeFollow() {
+  resumeFollow(heading) {
     this.manual = false;
+    this.recenterYaw = heading === undefined ? null : heading + Math.PI;
     this.pitch = 0.22;
   }
 
@@ -261,15 +263,16 @@ export class FollowCamera {
     this.update(1, playerPos, true);
   }
 
-  update(dt, playerPos, instant = false, heading, turning = 0) {
+  update(dt, playerPos, instant = false) {
     if (this.enabled && !window.__editorActive) {
-      // Steering makes the player the reference again, even after free look.
-      // Preserve the chosen pitch and zoom; only bring yaw behind the player.
-      if (Math.abs(turning) > .01) this.manual = false;
-      else this.rotate(this.input.rotate * 420 * dt, this.input.tilt * 340 * dt);
-      if (!this.manual && heading !== undefined) {
-        const delta = heading + Math.PI - this.yaw;
-        this.yaw += Math.atan2(Math.sin(delta), Math.cos(delta)) * (instant ? 1 : 1 - Math.exp(-dt * 10));
+      this.rotate(this.input.rotate * 420 * dt, this.input.tilt * 340 * dt);
+      // Follow position, not character yaw: otherwise camera-relative movement
+      // creates a feedback loop when moving sideways or toward the camera.
+      if (this.recenterYaw != null) {
+        const delta=this.recenterYaw-this.yaw;
+        const angle=Math.atan2(Math.sin(delta),Math.cos(delta));
+        this.yaw+=angle*(instant?1:1-Math.exp(-dt*10));
+        if(Math.abs(angle)<.001)this.recenterYaw=null;
       }
     }
     this.target.copy(playerPos).y += 1.55;

@@ -53,7 +53,7 @@ export function createHUD({ camera, walk, bridges }) {
     hero.classList.add('hidden');
     const c = $('scene');
     if (!matchMedia('(pointer: coarse)').matches) lockPointer(c);
-    showToast('W/S forward/back · A/D turn · SHIFT run · SPACE jump');
+    showToast('WASD move · Mouse look · SHIFT run · SPACE jump');
   }
 
   function setActiveNav(id) {
@@ -155,7 +155,7 @@ export function createHUD({ camera, walk, bridges }) {
     }
     if (e.code === 'Space') { e.preventDefault(); if (ctx && !e.repeat) ctx.player.input.jump = true; if (!started) start(); }
     if (e.code === 'KeyH') help.classList.toggle('open');
-    if (e.code === 'KeyC' && ctx) { ctx.follow.resumeFollow(); showToast('Camera following behind player'); }
+    if (e.code === 'KeyC' && ctx) { ctx.follow.resumeFollow(ctx.player.heading); showToast('Camera centered behind player'); }
     if (e.code === 'Escape') { help.classList.remove('open'); closePanel(); }
     if (e.code === 'KeyE' && !e.repeat) interact();
     if (NAV_KEYS[e.key]) travel(NAV_KEYS[e.key]);

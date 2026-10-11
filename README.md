@@ -16,8 +16,7 @@ npm run preview  # serve dist/
 ## Controls
 | Input | Action |
 |---|---|
-| `W / S` | move forward / backward along player facing |
-| `A / D` | turn in place at 200° per second (10° every 50 ms) while held; no translation |
+| `W A S D` | camera-relative movement; character faces the movement direction |
 | `← →` / `↑ ↓` | rotate / tilt camera; orbit camera independently while following player position |
 | `C` | center camera behind the player |
 | `Shift` | run |

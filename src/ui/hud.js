@@ -53,7 +53,7 @@ export function createHUD({ camera, walk, bridges }) {
     hero.classList.add('hidden');
     const c = $('scene');
     if (!matchMedia('(pointer: coarse)').matches) lockPointer(c);
-    showToast('WASD to move · SHIFT to run · SPACE to jump');
+    showToast('W/S forward/back · A/D turn · SHIFT run · SPACE jump');
   }
 
   function setActiveNav(id) {
@@ -130,7 +130,6 @@ export function createHUD({ camera, walk, bridges }) {
     }
     ctx.follow.resumeFollow();
     ctx.follow.yaw = ctx.player.heading + Math.PI;
-    ctx.follow.movementYaw = null;
     ctx.follow.snap(ctx.player.position);
     await fade(0);
     setActiveNav(id);

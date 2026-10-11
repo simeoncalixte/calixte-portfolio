@@ -33,7 +33,7 @@ export function createGhostFlight(bridge,homes){
         // Stage ahead of the player, rather than sweeping the entire deck
         // sideways, so stepping into the other lane always offers an escape.
         s.launch=s.home.clone().addScaledVector(bridge.dir,(forward<0?-1:1)*6);
-        notify(player,'Ghost incoming — move sideways to dodge the red marker!');
+        notify(player,'Ghost incoming — turn and move away from the red marker!');
       }
     }
     for(const s of states){

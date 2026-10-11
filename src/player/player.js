@@ -4,7 +4,7 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 const GRAVITY = -24;
 const JUMP_V = 7.2;
 export const WALK = 3.4, RUN = 7.6;
-const _fwd = new THREE.Vector3(), _right = new THREE.Vector3(), _move = new THREE.Vector3();
+export const TURN_SPEED = 2.4;
 
 /**
  * Third-person adventurer. The Quaternius rig ships Idle/Walk/Run; the jump is
@@ -123,26 +123,21 @@ export class Player {
     this.fadeTo(a, 0.2);
   }
 
-  /** @param cameraYaw yaw of the follow camera, so W moves away from it. */
-  update(dt, cameraYaw) {
+  /** W/S move in the player's frame; A/D turn independently of the camera. */
+  update(dt) {
     const inp = this.input;
-    let f = this.enabled ? inp.f : 0, r = this.enabled ? inp.r : 0;
-    const len = Math.hypot(f, r);
-    if (len > 1) { f /= len; r /= len; }
-
-    _fwd.set(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw));
-    _right.set(-_fwd.z, 0, _fwd.x);
-    _move.set(0, 0, 0).addScaledVector(_fwd, f).addScaledVector(_right, r);
-    const moving = _move.lengthSq() > 0.01;
+    const f = this.enabled ? THREE.MathUtils.clamp(inp.f,-1,1) : 0;
+    const r = this.enabled ? THREE.MathUtils.clamp(inp.r,-1,1) : 0;
+    this.heading -= r * TURN_SPEED * dt;
+    this.heading = Math.atan2(Math.sin(this.heading),Math.cos(this.heading));
+    const moving = Math.abs(f) > .01;
     if(this.enabled)this.ghostSlowdown=Math.max(0,(this.ghostSlowdown||0)-dt);
-    const target = moving ? (inp.run ? RUN : WALK)*(this.ghostSlowdown>0?.45:1) : 0;
+    const target = moving ? f*(inp.run ? RUN : WALK)*(this.ghostSlowdown>0?.45:1) : 0;
+    // Stop on release and brake before reversing, without drifting while turning.
+    if(!moving || this.speed*target<0)this.speed=0;
     this.speed += (target - this.speed) * Math.min(1, dt * (moving ? 8 : 10));
 
     if (moving) {
-      const want = Math.atan2(_move.x, _move.z);
-      let d = want - this.heading;
-      d = Math.atan2(Math.sin(d), Math.cos(d));
-      this.heading += d * Math.min(1, dt * 12);
       if (this.oneShot) { this.oneShot = null; }
     }
     this.root.rotation.y = this.heading;
@@ -195,8 +190,9 @@ export class Player {
       if (v > 5) this.fadeTo(this.actions.run, 0.2);
       else if (v > 0.5) this.fadeTo(this.actions.walk, 0.2);
       else this.fadeTo(this.actions.idle, 0.3);
-      this.actions.walk.timeScale = THREE.MathUtils.clamp(v / WALK, 0.6, 1.4);
-      this.actions.run.timeScale = THREE.MathUtils.clamp(v / RUN, 0.7, 1.2) * 1.05;
+      const direction=this.speed<0?-1:1;
+      this.actions.walk.timeScale = direction*THREE.MathUtils.clamp(v / WALK, 0.6, 1.4);
+      this.actions.run.timeScale = direction*THREE.MathUtils.clamp(v / RUN, 0.7, 1.2) * 1.05;
     }
     this.mixer.update(dt);
     if (this.packGlow) this.packGlow.color.setRGB(0.31, 0.85, 0.94).multiplyScalar(2.0 + Math.sin(performance.now() * 0.003) * 0.4);
@@ -231,7 +227,6 @@ export class FollowCamera {
     this.dragging = false;
     this.manual = false;
     this.input = { rotate: 0, tilt: 0 };
-    this.movementYaw = null;
 
     dom.addEventListener('pointerdown', (e) => {
       if (!this.enabled || window.__editorActive) return;
@@ -259,13 +254,6 @@ export class FollowCamera {
   resumeFollow() {
     this.manual = false;
     this.pitch = 0.22;
-  }
-
-  // Keep a held movement direction stable while the automatic camera turns.
-  getMovementYaw(input) {
-    if (!input.f && !input.r) this.movementYaw = null;
-    else if (this.manual || this.movementYaw === null) this.movementYaw = this.yaw;
-    return this.movementYaw ?? this.yaw;
   }
 
   snap(playerPos) {

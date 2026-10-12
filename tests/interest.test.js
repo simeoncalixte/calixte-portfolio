@@ -54,7 +54,7 @@ test('industry exhibits load real models and remain reachable near the Interest 
   globalThis.document={createElement:()=>({getContext:()=>({fillRect(){},fillText(){}})})};
   try {
     const {group,stations}=createInterestVerticals(lib),isl=island('interest');
-    assert.deepEqual(stations.map(({area})=>area.id),['insurance','education','finance','gaming','saas','aiaas']);
+    assert.deepEqual(stations.map(({area})=>area.id),['insurance','education','finance','gaming','saas','aiaas','sales']);
     const walk=new Walkable(buildBridgeData());
     group.updateMatrixWorld(true);
     for(const {area,station} of stations){
@@ -71,7 +71,7 @@ test('industry exhibits load real models and remain reachable near the Interest 
       const bounds=new THREE.Box3().setFromObject(model);
       assert.ok(Math.abs(bounds.min.y-(p.y+.43))<1e-5,'model rests on pedestal');
       assert.ok(bounds.getSize(new THREE.Vector3()).length()>2,'model is visible at exhibit scale');
-      assert.ok(CONTENT[`interest-${area.id}`].includes(area.source));
+      assert.ok(CONTENT[`interest-${area.id}`].includes(area.source || area.modelName));
       walk.addCollider(p.x,p.z,2,area.id);
     }
     const navigation=buildDogNavigation(walk);

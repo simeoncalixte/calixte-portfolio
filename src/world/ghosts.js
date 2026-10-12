@@ -45,7 +45,7 @@ function signTexture(text) {
   return texture;
 }
 
-/** Ghosts wait outside the rails, then warn and commit to dodgeable swoops. */
+/** Ghosts appear above the bridge ahead, descend, then commit to dodgeable swoops. */
 export function createPastGhosts(bridge, messages = PAST_MESSAGES, asset = null) {
   const group = new THREE.Group(); group.name = 'ghosts:past';
   const side = new THREE.Vector3(-bridge.dir.z, 0, bridge.dir.x);
@@ -145,9 +145,9 @@ export function createPastGhosts(bridge, messages = PAST_MESSAGES, asset = null)
       if(charging!==state.charging){const next=charging?state.flying:state.idle,old=charging?state.idle:state.flying;old.fadeOut(.15);next.reset().fadeIn(.15).play();state.charging=charging;}
       if(player?.enabled)state.mixer.update(dt);
     }
-    const target = attacking?1:ghostPresence(player, motion.home, bridge);
+    const target = attacking?1:0;
     state.opacity = THREE.MathUtils.lerp(state.opacity, target, 1 - Math.exp(-dt * 10));
-    anchor.visible = state.opacity > 0.01;
+    anchor.visible = attacking && state.opacity > 0.01;
     for (const entry of materials) entry.material.opacity = entry.opacity * state.opacity;
     figure.position.y = 0.35 + Math.sin(time * 0.9 + i * 1.7) * 0.15;
     figure.rotation.z = Math.sin(time * 0.65 + i) * 0.025;

@@ -22,3 +22,9 @@ test('every experience exhibit has local imagery and a navigable detail chapter'
   assert.equal(EXPERIENCE.find(e=>e.id==='sparks').phases.length,2);
   assert.ok(CONTENT.contact.includes(PROFILE.email));
 });
+
+test('about section highlights the key AI model brands', () => {
+  for (const brand of ['Codex', 'Claude', 'Qwen', 'Gemini']) {
+    assert.ok(CONTENT.about.includes(brand));
+  }
+});

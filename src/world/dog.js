@@ -103,8 +103,30 @@ export function createDog(walk, player, random = Math.random, root) {
   navigation.ignoreCollider(collider);
   let path=[], pathIndex=0, replan=0, speed=0, version=walk.navigationVersion??0;
   root.userData.spawnIsland=spawnIsland.id;
+  let petRemaining=0;
+  const canPet=()=>player.enabled&&player.grounded!==false&&petRemaining===0&&
+    root.position.distanceTo(player.position)<2.8&&navigation.clear(root.position,player.position);
+  root.userData.interactable={
+    id:'pet-dog',label:'Pet the dog',position:root.position,radius:2.8,
+    available:canPet,
+    activate(){
+      if(!canPet())return;
+      if(player.petDog && !player.petDog(root))return;
+      petRemaining=3;speed=0;root.userData.speed=0;root.userData.state='petted';
+      return 'Good dog! Its tail starts wagging.';
+    },
+  };
   root.userData.update=(time,_camera,activePlayer,dt=1/60)=>{
-    if(!activePlayer || !activePlayer.enabled) {root.userData.animate(dt,0,time);return;}
+    if(!activePlayer || !activePlayer.enabled) {root.userData.animate(0,0,time,petRemaining>0);return;}
+    if(petRemaining>0 || activePlayer.petting?.dog===root){
+      petRemaining=activePlayer.petting?.dog===root?.2:Math.max(0,petRemaining-dt);
+      const heading=Math.atan2(activePlayer.position.x-root.position.x,activePlayer.position.z-root.position.z);
+      const delta=heading-root.rotation.y;
+      root.rotation.y+=Math.atan2(Math.sin(delta),Math.cos(delta))*(1-Math.exp(-dt*6));
+      root.userData.state='petted';root.userData.speed=0;
+      root.userData.animate(dt,0,time,true);
+      replan=0;return;
+    }
     if(version!==(walk.navigationVersion??0)){navigation=buildDogNavigation(walk,collider);version=walk.navigationVersion;replan=0;}
     const distance=root.position.distanceTo(activePlayer.position);
     root.userData.state=distance<=DOG_CHASE_RANGE?'chasing':'hunting';

@@ -154,9 +154,10 @@ const hud = createHUD({ camera, walk, bridges });
 
 // ------------------------------------------------------------------ async assets
 async function loadAll() {
-  const [envHDR, adventurer, dogAsset, ghostAsset, interestModels, ...rest] = await Promise.all([
+  const [envHDR, adventurer, femaleAsset, dogAsset, ghostAsset, interestModels, ...rest] = await Promise.all([
     loadHDR('qwantani_dusk_2_puresky'),
     loadModel('adventurer'),
+    loadModel('female'),
     loadModel('dog'),
     loadModel('ghost'),
     Promise.all(INTEREST_VERTICALS.map(async area=>[area.model,(await loadModel(area.model)).scene])),
@@ -176,6 +177,7 @@ async function loadAll() {
 
   const pines = [prepPine(pa), prepPine(pb), prepPine(pc), prepPine(pd)];
   const lib = {
+    trees: pines,
     ghost: ghostAsset,
     rocks: [...prepVariants(rm1, 1.6, '#b9b4ad'), ...prepVariants(rm2, 1.6, '#b9b4ad'), ...prepVariants(r7, 1.8, '#b0aaa4')],
     ferns: prepVariants(fern, 1.2, '#a7b88f'),
@@ -200,7 +202,7 @@ async function loadAll() {
   scene.add(scatterProps(lib, walk));
   scene.add(createFlowers(walk));
 
-  player = new Player(adventurer, walk);
+  player = new Player(adventurer, walk, femaleAsset);
   const sp = SPAWN.clone();
   sp.y = surfaceHeight(island('main'), sp.x, sp.z);
   player.teleport(sp, Math.PI);
@@ -215,6 +217,7 @@ async function loadAll() {
   await applyLayout(scene);
   const dog = createDog(walk, player, Math.random, createDogModel(dogAsset));
   scene.add(dog);
+  landmarks.interactables.push(dog.userData.interactable);
   updaters.push(dog.userData.update);
 
   // pre-compile shaders to avoid hitches when looking around
@@ -238,8 +241,8 @@ function frame() {
   elapsed += dt;
   if (player) {
     const editing = window.__editorActive;
-    player.enabled = !editing;
-    follow.enabled = !editing;
+    player.enabled = !editing && hud.hasStarted();
+    follow.enabled = !editing && hud.hasStarted();
     player.update(dt, follow.getMovementYaw(player.input));
     if (!editing) follow.update(dt, player.position, false, player.heading);
     updateAtmosphere(dt, player.position);

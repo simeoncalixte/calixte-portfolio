@@ -22,8 +22,14 @@ export class Walkable {
     return collider;
   }
 
-  addPlatform(x, z, halfWidth, halfDepth, y) {
-    this.platforms.push({ x, z, halfWidth, halfDepth, y });
+  addBoxCollider(x, z, halfWidth, halfDepth, yaw, tag) {
+    const collider = { x, z, halfWidth, halfDepth, yaw, tag };
+    this.colliders.push(collider);
+    return collider;
+  }
+
+  addPlatform(x, z, halfWidth, halfDepth, y, yaw = 0) {
+    this.platforms.push({ x, z, halfWidth, halfDepth, y, yaw });
   }
 
   /** Candidate floor heights at x,z (may be several where a bridge meets an island). */
@@ -42,7 +48,8 @@ export class Walkable {
       out.push({ y: bridgeHeight(br, t), kind: 'bridge', bridge: br, t });
     }
     for (const platform of this.platforms) {
-      if (Math.abs(x - platform.x) <= platform.halfWidth && Math.abs(z - platform.z) <= platform.halfDepth) {
+      const dx=x-platform.x, dz=z-platform.z, c=Math.cos(platform.yaw), s=Math.sin(platform.yaw);
+      if (Math.abs(c*dx-s*dz) <= platform.halfWidth && Math.abs(s*dx+c*dz) <= platform.halfDepth) {
         // The slab replaces the buried terrain beneath it.
         for (const floor of out) floor.y = Math.max(floor.y, platform.y);
       }
@@ -76,13 +83,29 @@ export class Walkable {
     for (const c of this.colliders) {
       if (c === ignore) continue;
       const dx = x - c.x, dz = z - c.z;
-      if (dx * dx + dz * dz < (c.r + radius) ** 2) return c;
+      if (c.halfWidth !== undefined) {
+        const cos=Math.cos(c.yaw), sin=Math.sin(c.yaw);
+        const lx=cos*dx-sin*dz, lz=sin*dx+cos*dz;
+        const ex=Math.max(0,Math.abs(lx)-c.halfWidth), ez=Math.max(0,Math.abs(lz)-c.halfDepth);
+        if (ex*ex+ez*ez < radius*radius) return c;
+      } else if (dx * dx + dz * dz < (c.r + radius) ** 2) return c;
     }
     return null;
   }
 
   /** Resolve a horizontal move with wall sliding. Returns the accepted position. */
   move(pos, dx, dz, y, radius = 0.35, ignore = null) {
+    // Sweep in small increments so a long frame cannot skip a wall.
+    const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/Math.min(.15,radius*.5)));
+    const current=pos.clone();
+    for(let i=0;i<steps;i++){
+      this.moveStep(current,dx/steps,dz/steps,current.y,radius,ignore);
+      current.copy(_v);
+    }
+    return _v.copy(current);
+  }
+
+  moveStep(pos, dx, dz, y, radius, ignore) {
     const tryAt = (nx, nz) => {
       const g = this.groundAt(nx, nz, y);
       if (!g) return null;
@@ -97,11 +120,11 @@ export class Walkable {
     if (g && Math.abs(dz) > 1e-5) return _v.set(pos.x, g.y, pos.z + dz);
     // push out of colliders if we ended up inside one
     const c = this.blocked(pos.x, pos.z, radius, ignore);
-    if (c) {
+    if (c && c.halfWidth === undefined) {
       const ang = Math.atan2(pos.z - c.z, pos.x - c.x);
       const nx = c.x + Math.cos(ang) * (c.r + radius + 0.01), nz = c.z + Math.sin(ang) * (c.r + radius + 0.01);
       const gg = this.groundAt(nx, nz, y);
-      if (gg) return _v.set(nx, gg.y, nz);
+      if (gg && !this.blocked(nx,nz,radius,ignore)) return _v.set(nx, gg.y, nz);
     }
     const g0 = this.groundAt(pos.x, pos.z, y);
     return _v.set(pos.x, g0 ? g0.y : y, pos.z);

@@ -76,3 +76,23 @@ Additional Interest exhibits:
 ## Dark Past bridge ghosts
 
 [Ghost by Quaternius](https://poly.pizza/m/Iip30bDHmu), [CC0](https://creativecommons.org/publicdomain/zero/1.0/), is served locally as `character/ghost/ghost.glb`. The original animated model is retained. Runtime adaptations add dark spectral shading, red emissive eyes, scaling, fading, and idle/flying animation blends. Warning markers and swoop/dodge mechanics are original code. Custom nonblank messages in `pastMessages.js` remain supported; blank signs are hidden.
+
+## Replacement forest — Quaternius · CC0
+
+Four trees from [Stylized Nature MegaKit](https://poly.pizza/bundle/Stylized-Nature-MegaKit-T34GZFA0fm), authored by Quaternius, downloaded 2026-10-12:
+- `trees/canopy-1.glb`: https://poly.pizza/m/QVOop92WmG
+- `trees/canopy-2.glb`: https://poly.pizza/m/YWjGDJ9F7g
+- `trees/canopy-3.glb`: https://poly.pizza/m/aVOxaHRPWe
+- `trees/canopy-4.glb`: https://poly.pizza/m/qZtx0AHhcy
+
+These replace the old pine models in the forest and the procedural garden trees.
+Authored bark and foliage textures are retained; foliage uses alpha testing for instancing.
+The unlabeled AI shrine is original procedural geometry in `src/world/aiShrine.js`.
+
+## Archived male character — Diesel · THEUNSEENVULGA · CC0
+
+[Diesel](https://theunseenvulga.itch.io/3d-charater-riggeddiesel), by the same author as EMA, was used before the current Casual Man model. Original mesh and textures retained; CC0 Quaternius motions retargeted. No backpack. See `public/assets/character/MALE-SOURCE.md` for provenance and rebuild instructions.
+
+## Current male character — Casual Man · Grab3D · CC0
+
+[Casual Man](https://grab3d.com/models/characters/man/) is free under CC0. Publisher discloses AI-assisted creation (Meshy base, Blender cleanup). Mesh optimized to 78,145 triangles and CC0 Quaternius gameplay motions retargeted; original textures retained, no backpack. See `public/assets/character/MALE-SOURCE.md`.

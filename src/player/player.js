@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { createCharacterRig } from './characterAppearance.js';
+import { PettingPose } from './petting.js';
 
 const GRAVITY = -24;
 const JUMP_V = 7.2;
@@ -11,38 +12,16 @@ const _fwd = new THREE.Vector3(), _right = new THREE.Vector3(), _move = new THRE
  * procedural (ballistic arc + a held mid-stride pose + squash on landing).
  */
 export class Player {
-  constructor(gltf, walk) {
+  constructor(gltf, walk, femaleAsset=null) {
     this.walk = walk;
     this.root = new THREE.Group();
     this.root.name = 'player';
-    const model = SkeletonUtils.clone(gltf.scene);
-    // Skinned bounds are unreliable on this rig (cm armature scaled x100), so
-    // measure with the head bone instead: target head-bone height ~1.45m.
-    model.updateMatrixWorld(true);
-    let headY = 1.55;
-    model.traverse((o) => { if (o.isBone && o.name === 'Head') headY = o.getWorldPosition(new THREE.Vector3()).y; });
-    model.scale.setScalar(1.45 / headY);
-    this.model = model;
-    this.root.add(model);
-    this.styleModel(model);
-
-    this.mixer = new THREE.AnimationMixer(model);
-    const clip = (n) => gltf.animations.find((a) => a.name.endsWith('|' + n) || a.name === n);
-    this.actions = {
-      idle: this.mixer.clipAction(clip('Idle')),
-      walk: this.mixer.clipAction(clip('Walk')),
-      run: this.mixer.clipAction(clip('Run')),
-      jump: this.mixer.clipAction(clip('Run').clone()),
-      wave: this.mixer.clipAction(clip('Wave')),
-      interact: this.mixer.clipAction(clip('Interact')),
-    };
-    this.actions.jump.timeScale = 0;
-    this.actions.wave.setLoop(THREE.LoopOnce, 1);
-    this.actions.wave.clampWhenFinished = false;
-    this.actions.interact.setLoop(THREE.LoopOnce, 1);
-    for (const a of Object.values(this.actions)) a.enabled = true;
-    this.current = this.actions.idle;
-    this.current.play();
+    this.characters={male:createCharacterRig(gltf)};
+    if(femaleAsset)this.characters.female=createCharacterRig(femaleAsset);
+    for(const rig of Object.values(this.characters))rig.mixer.addEventListener('finished',e=>{
+      if(e.action===this.oneShot){this.oneShot=null;this.fadeTo(this.actions.idle,.3);}
+    });
+    this.setGender('male');
 
     this.position = this.root.position;
     this.velY = 0;
@@ -54,59 +33,6 @@ export class Player {
     this.input = { f: 0, r: 0, run: false, jump: false };
     this.enabled = true;
     this.oneShot = null;
-
-    this.mixer.addEventListener('finished', (e) => {
-      if (e.action === this.oneShot) { this.oneShot = null; this.fadeTo(this.actions.idle, 0.3); }
-    });
-  }
-
-  styleModel(model) {
-    const palette = {
-      Green: '#23272e', LightGreen: '#30353d', Brown: '#1b1d22', Brown2: '#2b2420', Grey: '#3a3f47', Black: '#101114', Gold: '#8a7a5a',
-    };
-    model.traverse((o) => {
-      if (!o.isMesh) return;
-      o.castShadow = true;
-      o.receiveShadow = true;
-      o.frustumCulled = false;
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
-      const out = mats.map((m) => {
-        const c = m.clone();
-        if (palette[m.name]) c.color.set(palette[m.name]);
-        c.roughness = 0.75;
-        c.metalness = 0;
-        c.envMapIntensity = 0.8;
-        return c;
-      });
-      o.material = Array.isArray(o.material) ? out : out[0];
-    });
-    // glowing cyan straps on the backpack (attached to the chest bone so they animate)
-    model.updateMatrixWorld(true);
-    let chest = null, pack = null;
-    model.traverse((o) => { if (o.isBone && /^Chest$|Torso/.test(o.name) && !chest) chest = o; if (o.name === 'Backpack') pack = o; });
-    if (chest && pack) {
-      const box = new THREE.Box3();
-      pack.traverse((o) => {
-        if (!o.isSkinnedMesh) return;
-        o.computeBoundingBox();
-        box.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld));
-      });
-      const size = box.getSize(new THREE.Vector3());
-      const c = box.getCenter(new THREE.Vector3());
-      const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color('#4fd8f0').multiplyScalar(4), toneMapped: false });
-      const strips = new THREE.Group();
-      for (const [dx, dy, w, hgt] of [[0, 0.3, 0.5, 0.018], [-0.4, 0.0, 0.018, 0.55], [0.4, 0.0, 0.018, 0.55]]) {
-        const s = new THREE.Mesh(new THREE.BoxGeometry(size.x * w, size.y * hgt, 0.02), glow);
-        s.position.set(c.x + dx * size.x, c.y + dy * size.y, box.min.z - 0.005);
-        strips.add(s);
-      }
-      // convert world -> chest-local, keeping the visual size
-      chest.updateMatrixWorld(true);
-      const inv = new THREE.Matrix4().copy(chest.matrixWorld).invert();
-      strips.children.forEach((s) => { s.applyMatrix4(inv); });
-      chest.add(...strips.children);
-      this.packGlow = glow;
-    }
   }
 
   fadeTo(action, dur = 0.25) {
@@ -117,14 +43,93 @@ export class Player {
   }
 
   playOnce(name) {
+    if(this.petting || this.meditation)return;
     const a = this.actions[name];
     if (!a) return;
     this.oneShot = a;
     this.fadeTo(a, 0.2);
   }
 
+  setGender(gender) {
+    const rig=Object.hasOwn(this.characters,gender)?this.characters[gender]:null;
+    if(!rig)return false;
+    if(this.gender===gender)return true;
+    for(const state of [this.petting,this.meditation])state?.pose.restore();
+    this.petting=null;this.meditation=null;this.oneShot=null;
+    if(this.model){this.root.remove(this.model);this.mixer.stopAllAction();}
+    Object.assign(this,rig);
+    this.root.add(this.model);
+    this.current=this.actions.idle;this.current.reset().play();this.mixer.update(0);
+    this.gender=gender;return true;
+  }
+
+  petDog(dog) {
+    if(!this.grounded || this.petting || this.meditation)return false;
+    const direction=this.position.clone().sub(dog.position).setY(0).normalize();
+    const destination=dog.position.clone().addScaledVector(direction,1.15);
+    if(this.walk.blocked(destination.x,destination.z,.35))return false;
+    this.petting={dog,destination,time:0,approach:0,pose:new PettingPose(this.model)};
+    this.oneShot=null;this.speed=0;this.effSpeed=0;
+    return true;
+  }
+
+  meditate(destination,heading) {
+    if(!this.enabled || !this.grounded || this.petting || this.meditation || this.position.distanceTo(destination)>1.7)return false;
+    if(this.walk.blocked(destination.x,destination.z,.35))return false;
+    this.meditation={destination:destination.clone(),heading,time:0,approach:0,pose:new PettingPose(this.model)};
+    this.oneShot=null;this.speed=0;this.effSpeed=0;
+    return true;
+  }
+
+  updateMeditation(dt) {
+    const state=this.meditation;state.pose.restore();
+    if(this.enabled && (this.input.f || this.input.r || this.input.jump)){
+      this.meditation=null;this.input.jump=false;return;
+    }
+    if(!this.enabled)dt=0;
+    const delta=state.destination.clone().sub(this.position);delta.y=0;
+    if(delta.length()>.035){
+      state.approach+=dt;
+      const step=delta.clampLength(0,dt*1.5);
+      this.position.copy(this.walk.move(this.position,step.x,step.z,this.position.y));
+      this.fadeTo(this.actions.walk,.2);
+      if(state.approach>2){this.meditation=null;return;}
+    }else{
+      state.time+=dt;this.fadeTo(this.actions.idle,.25);
+    }
+    this.heading=state.heading;this.root.rotation.y=this.heading;
+    this.mixer.update(dt);
+    state.pose.apply(THREE.MathUtils.smoothstep(state.time,0,.85),null,this.root,true);
+  }
+
+  updatePetting(dt) {
+    const pet=this.petting;
+    pet.pose.restore();
+    if(!this.enabled)dt=0;
+    const delta=pet.destination.clone().sub(this.position);delta.y=0;
+    if(delta.length()>.04 && pet.time===0){
+      pet.approach+=dt;
+      const step=delta.clone().clampLength(0,dt*2);
+      const next=this.walk.move(this.position,step.x,step.z,this.position.y).clone();
+      this.position.copy(next);this.fadeTo(this.actions.walk,.15);
+      if(pet.approach>2){this.petting=null;return;}
+    }else{
+      pet.time+=dt;this.fadeTo(this.actions.idle,.15);
+    }
+    this.heading=Math.atan2(pet.dog.position.x-this.position.x,pet.dog.position.z-this.position.z);
+    this.root.rotation.y=this.heading;
+    this.mixer.update(dt);
+    const weight=THREE.MathUtils.smoothstep(pet.time,0,.6)*(1-THREE.MathUtils.smoothstep(pet.time,2.5,3.2));
+    const target=pet.dog.userData.petTarget?.() ?? pet.dog.position.clone().add(new THREE.Vector3(0,.8,0));
+    pet.pose.apply(weight,target,this.root);
+    this.input.jump=false;
+    if(pet.time>=3.2){pet.pose.restore();this.petting=null;}
+  }
+
   /** @param cameraYaw yaw of the follow camera, so W moves away from it. */
   update(dt, cameraYaw) {
+    if(this.meditation){this.updateMeditation(dt);return;}
+    if(this.petting){this.updatePetting(dt);return;}
     const inp = this.input;
     let f = this.enabled ? inp.f : 0, r = this.enabled ? inp.r : 0;
     const len = Math.hypot(f, r);
@@ -179,7 +184,7 @@ export class Player {
     } else {
       // follow terrain smoothly; small drops snap, big ones fall
       if (groundY < this.position.y - 0.6) { this.grounded = false; this.velY = 0; }
-      else this.position.y += (groundY - this.position.y) * Math.min(1, dt * 18);
+      else this.position.y = groundY;
     }
 
     // landing squash & stretch
@@ -199,10 +204,11 @@ export class Player {
       this.actions.run.timeScale = THREE.MathUtils.clamp(v / RUN, 0.7, 1.2) * 1.05;
     }
     this.mixer.update(dt);
-    if (this.packGlow) this.packGlow.color.setRGB(0.31, 0.85, 0.94).multiplyScalar(2.0 + Math.sin(performance.now() * 0.003) * 0.4);
   }
 
   teleport(p, heading) {
+    if(this.meditation){this.meditation.pose.restore();this.meditation=null;}
+    if(this.petting){this.petting.pose.restore();this.petting=null;}
     this.ghostSlowdown=0;
     this.position.copy(p);
     this.heading = heading;

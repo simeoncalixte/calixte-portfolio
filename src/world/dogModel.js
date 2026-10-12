@@ -33,7 +33,16 @@ export function createDogModel(gltf) {
   pivot.scale.setScalar(scale);
   pivot.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
   let state = 'idle';
-  root.userData.animate = (dt, speed) => {
+  const tail=rig.getObjectByName('Tail1'),head=rig.getObjectByName('Head');
+  const overlays=[tail,head].filter(Boolean).map(bone=>({bone,base:bone.quaternion.clone()}));
+  root.userData.petTarget=()=>{
+    root.updateWorldMatrix(true,true);
+    return head.localToWorld(new THREE.Vector3(0,.12,0));
+  };
+  let reacting=false,petTime=0;
+  root.userData.animate = (dt, speed, _time, petting=false) => {
+    // Remove the previous additive pose before the mixer evaluates this frame.
+    if(reacting)for(const {bone,base} of overlays)bone.quaternion.copy(base);
     const next = speed < 0.12 ? 'idle' : speed > 3.2 ? 'run' : 'walk';
     if (next !== state) {
       actions[next].reset().setEffectiveWeight(1).fadeIn(0.22).play();
@@ -45,6 +54,13 @@ export function createDogModel(gltf) {
     actions.walk.timeScale = speed / 2.72;
     actions.run.timeScale = speed / 2.72;
     mixer.update(dt);
+    reacting=petting;
+    if(petting){
+      petTime+=dt;
+      for(const entry of overlays)entry.base.copy(entry.bone.quaternion);
+      if(tail)tail.rotateZ(Math.sin(petTime*18)*.55);
+      if(head)head.rotateZ(Math.sin(petTime*3)*.12+.1);
+    }else petTime=0;
   };
   root.userData.animationState = () => state;
   return root;

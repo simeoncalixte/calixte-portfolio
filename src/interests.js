@@ -49,4 +49,12 @@ export const INTEREST_VERTICALS = [
     ideas: ['Connect AI capabilities to existing applications through clear APIs.', 'Use relevant documents and source evidence to support useful responses.', 'Evaluate output quality and give people ways to review and correct results.'],
     modelName: 'Robot', author: 'Poly by Google', source: 'https://poly.pizza/m/9A6cuitiB_4',
   },
+  {
+    id: 'sales', title: 'Sales', color: '#f3bb66', model: 'salesGrowth',
+    angle: Math.PI, subtitle: 'Relationships. Value. Growth.',
+    description: "I'm interested in sales as a way to understand customer needs, communicate value, and build lasting relationships.",
+    topics: ['Customer relationships', 'Sales workflows', 'Pipeline insights'],
+    ideas: ['Help teams organize conversations and follow up at the right time.', 'Make sales pipelines and customer needs easier to understand.', 'Connect useful products with the people and businesses they can help.'],
+    modelName: 'Sales growth briefcase', author: 'Original portfolio artwork',
+  },
 ];

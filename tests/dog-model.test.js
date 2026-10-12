@@ -37,4 +37,12 @@ test('dog asset has fur, a working skeleton, and stable idle/walk/run poses', as
     poses.push(skin.skeleton.bones.map(b=>b.quaternion.toArray().join(',')).join(';'));
   }
   assert.notEqual(poses[0],poses[1]); assert.notEqual(poses[1],poses[2]);
+  const tail=dog.getObjectByName('Tail1'),head=dog.getObjectByName('Head');
+  assert.ok(tail&&head,'pet reaction bones exist');
+  dog.userData.animate(1/60,0,0,true);const wag=tail.quaternion.clone();
+  for(let i=0;i<12;i++)dog.userData.animate(1/60,0,i/60,true);
+  assert.ok(wag.angleTo(tail.quaternion)>.1,'tail visibly wags during petting');
+  dog.userData.animate(0,0,0,false);const rest=tail.quaternion.clone();
+  for(let i=0;i<30;i++)dog.userData.animate(0,0,0,false);
+  assert.deepEqual(tail.quaternion.toArray(),rest.toArray(),'reaction leaves no accumulated bone rotation');
 });

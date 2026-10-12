@@ -5,12 +5,19 @@ import { INTEREST_VERTICALS } from '../interests.js';
 const tags = (items) => `<div class="tags">${items.map(t=>`<span class="tag">${t}</span>`).join('')}</div>`;
 const image = (e) => `<div class="experience-art ${e.darkLogo ? 'dark-art' : ''} ${e.id === 'xbox' ? 'xbox-art' : ''}"><img src="${e.image}" alt="${e.imageAlt}" />${e.logo && e.logo!==e.image ? `<img class="company-logo" src="${e.logo}" alt="${e.company} logo" />` : ''}</div>`;
 const flow = (e) => `<div class="work-flow" aria-label="${e.flow.join(' to ')}">${e.flow.map((step,i)=>`<span><b>0${i+1}</b>${step}</span>`).join('<i aria-hidden="true">→</i>')}</div>`;
+const aiBrand = ({ name, mark, accent }) => `<span class="model-brand" style="--brand-accent:${accent};"><i aria-hidden="true">${mark}</i><strong>${name}</strong></span>`;
+const AI_BRANDS = [
+  { name: 'Codex', mark: 'C', accent: '#4fd8f0' },
+  { name: 'Claude', mark: 'A', accent: '#d97706' },
+  { name: 'Qwen', mark: 'Q', accent: '#6d5ef5' },
+  { name: 'Gemini', mark: 'G', accent: '#22c55e' },
+];
 
 export const CONTENT = {
   about: `<div class="num">01 — ABOUT</div><h2>Hi, I'm Calixte.</h2>
     <p>Software developer, development lead, and instructor. I build across interfaces, APIs, data, and infrastructure, with experience in both small teams and large organizations.</p>
     <div class="career-stats"><div><strong>6</strong><span>Organizations</span></div><div><strong>5</strong><span>Developers led</span></div><div><strong>10</strong><span>Students per class</span></div></div>
-    <div class="brand-strip">${EXPERIENCE.filter(e=>e.logo).map(e=>`<span class="${e.darkLogo?'dark-art':''}"><img src="${e.logo}" alt="${e.company}" /></span>`).join('')}</div>
+    <div class="brand-strip">${EXPERIENCE.filter(e=>e.logo).map(e=>`<span class="${e.darkLogo?'dark-art':''}"><img src="${e.logo}" alt="${e.company}" /></span>`).join('')}${AI_BRANDS.map(aiBrand).join('')}</div>
     <p>I value continued learning, thoughtful leadership, and building useful products well.</p>
     <button class="cta" data-experience="projects">EXPLORE MY EXPERIENCE <span>→</span></button>`,
   projects: `<div class="num">02 — EXPERIENCE ISLAND</div><h2>A career you can explore.</h2>
@@ -56,4 +63,4 @@ for (const area of INTEREST_VERTICALS) CONTENT[`interest-${area.id}`] = `
   <h3>What I'd like to explore</h3>
   <ul class="outcomes">${area.ideas.map(idea=>`<li>${idea}</li>`).join('')}</ul>
   ${area.id==='education'?'<button class="cta" data-experience="experience-geeks">EXPLORE MY TEACHING EXPERIENCE <span>→</span></button>':''}
-  <p class="image-credit">3D model: <a href="${area.source}" target="_blank" rel="noopener">${area.modelName} by ${area.author}</a> · <a href="${area.licenseUrl || 'https://creativecommons.org/licenses/by/3.0/'}" target="_blank" rel="noopener">${area.license || 'CC BY 3.0'}</a>. Display scale and placement adjusted.</p>`;
+  ${area.source ? `<p class="image-credit">3D model: <a href="${area.source}" target="_blank" rel="noopener">${area.modelName} by ${area.author}</a> · <a href="${area.licenseUrl || 'https://creativecommons.org/licenses/by/3.0/'}" target="_blank" rel="noopener">${area.license || 'CC BY 3.0'}</a>. Display scale and placement adjusted.</p>` : `<p class="image-credit">${area.modelName} · Original artwork created for this portfolio.</p>`}`;

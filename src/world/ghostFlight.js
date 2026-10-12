@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { bridgeHeight } from './layout.js';
 
-export const GHOST_WARNING_TIME=1.2;
+export const GHOST_WARNING_TIME=3.2;
+export const GHOST_SPAWN_HEIGHT=20;
+export const GHOST_SPAWN_AHEAD=40;
 const HIT_RADIUS=.65;
 
 /** One committed swoop at a time; the target locks before launch so it is dodgeable. */
@@ -32,7 +34,17 @@ export function createGhostFlight(bridge,homes){
         const forward=Math.sin(player.heading||0)*bridge.dir.x+Math.cos(player.heading||0)*bridge.dir.z;
         // Stage ahead of the player, rather than sweeping the entire deck
         // sideways, so stepping into the other lane always offers an escape.
-        s.launch=s.home.clone().addScaledVector(bridge.dir,(forward<0?-1:1)*6);
+        const length=Math.hypot(bridge.pb.x-bridge.pa.x,bridge.pb.z-bridge.pa.z);
+        const along=player.position.clone().sub(bridge.pa).dot(bridge.dir);
+        const ahead=THREE.MathUtils.clamp(along+(forward<0?-1:1)*GHOST_SPAWN_AHEAD,.5,length-.5);
+        s.launch=bridge.pa.clone().addScaledVector(bridge.dir,ahead);
+        s.launch.y=bridgeHeight(bridge,ahead/length);
+        // Stay in the player's bridge lane, with the spawn vertically above it.
+        const side=new THREE.Vector3(-bridge.dir.z,0,bridge.dir.x);
+        const lane=player.position.clone().sub(bridge.pa).dot(side);
+        s.launch.addScaledVector(side,THREE.MathUtils.clamp(lane,-bridge.halfWidth+.5,bridge.halfWidth-.5));
+        s.spawn=s.launch.clone().add(new THREE.Vector3(0,GHOST_SPAWN_HEIGHT,0));
+        s.position.copy(s.spawn);s.target.copy(player.position);
         notify(player,'Ghost incoming — move sideways to dodge the red marker!');
       }
     }
@@ -40,7 +52,7 @@ export function createGhostFlight(bridge,homes){
       if(s.phase==='idle')continue;
       s.age+=dt;
       if(s.phase==='warning'){
-        s.position.lerpVectors(s.home,s.launch,Math.min(1,s.age/GHOST_WARNING_TIME));
+        s.position.lerpVectors(s.spawn,s.launch,THREE.MathUtils.smoothstep(s.age/GHOST_WARNING_TIME,0,1));
         // Track only during the early wind-up; leave 0.65 seconds of fixed warning.
         if(s.age<GHOST_WARNING_TIME-.65){s.target.copy(player.position);}
         if(s.age>=GHOST_WARNING_TIME){
@@ -58,7 +70,7 @@ export function createGhostFlight(bridge,homes){
         }
         if(s.age>=s.duration){if(!s.hit)notify(player,'Dodged!');s.phase='return';s.age=0;s.start=s.position.clone();}
       }else if(s.phase==='return'){
-        s.position.lerpVectors(s.start,s.home,Math.min(1,s.age/.9));
+        s.position.lerpVectors(s.start,s.spawn,Math.min(1,s.age/.9));
         if(s.age>=.9){s.phase='idle';s.cooldown=12;gap=3;}
       }
     }

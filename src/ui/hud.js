@@ -14,6 +14,18 @@ function lockPointer(el) {
 export function createHUD({ camera, walk, bridges }) {
   let ctx = null; // {player, follow, landmarks}
   let started = false;
+  let selectedGender=null;
+  try { const saved=localStorage.getItem('portfolio-character-gender');if(['male','female'].includes(saved))selectedGender=saved; } catch {}
+  const choices=[...document.querySelectorAll('input[name="character-gender"]')];
+  for(const input of choices){
+    input.checked=input.value===selectedGender;
+    input.addEventListener('change',()=>{
+      selectedGender=input.value;ctx?.player.setGender(selectedGender);
+      $('start-btn').disabled=!ctx;
+      try { localStorage.setItem('portfolio-character-gender',selectedGender); } catch {}
+    });
+  }
+
   let panelOpen = null;
   let near = null;
   let lastGhostEvent=null;
@@ -36,24 +48,27 @@ export function createHUD({ camera, walk, bridges }) {
   }
 
   function interact() {
-    if (!ctx || !near || panelOpen || window.__editorActive || near.available?.() === false) return;
+    if (!started || !ctx || !near || panelOpen || window.__editorActive || near.available?.() === false) return;
     const p = ctx.player.position;
     if (Math.hypot(p.x - near.position.x, p.z - near.position.z) >= near.radius || Math.abs(p.y - near.position.y) >= 4) return;
     if (near.activate) {
-      const message = near.activate();
+      const message = near.activate(ctx.player);
       ctx.player.playOnce('interact');
       if (message) showToast(message);
     } else openPanel(near.id);
   }
 
   function start() {
-    if (started) return;
+    if (started) return true;
+    if(!ctx || !selectedGender)return false;
+    ctx.player.setGender(selectedGender);
     started = true;
     document.body.classList.add('started');
     hero.classList.add('hidden');
     const c = $('scene');
     if (!matchMedia('(pointer: coarse)').matches) lockPointer(c);
-    showToast('WASD to move · SHIFT to run · SPACE to jump');
+    showToast('W/S to move · A/D to rotate camera · SHIFT to run · SPACE to jump');
+    return true;
   }
 
   function setActiveNav(id) {
@@ -90,7 +105,7 @@ export function createHUD({ camera, walk, bridges }) {
   /** Fade out, move the player next to a landmark, fade in. */
   async function travel(id) {
     if (!ctx) return;
-    start();
+    if(!start())return;
     closePanel();
     const grade = ctx.post?.grade;
     const fade = (to) => new Promise((res) => {
@@ -139,15 +154,17 @@ export function createHUD({ camera, walk, bridges }) {
   // ---------------------------------------------------------------- input
   const setInput = () => {
     if (!ctx) return;
+    if(!started)keys.clear();
     const i = ctx.player.input;
     i.f = (keys.has('KeyW') ? 1 : 0) - (keys.has('KeyS') ? 1 : 0);
-    i.r = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
-    ctx.follow.input.rotate = (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0);
+    i.r = 0;
+    ctx.follow.input.rotate = (keys.has('ArrowRight') || keys.has('KeyD') ? 1 : 0) - (keys.has('ArrowLeft') || keys.has('KeyA') ? 1 : 0);
     ctx.follow.input.tilt = (keys.has('ArrowDown') ? 1 : 0) - (keys.has('ArrowUp') ? 1 : 0);
     i.run = keys.has('ShiftLeft') || keys.has('ShiftRight');
   };
   window.addEventListener('keydown', (e) => {
-    if (e.target.closest?.('input, textarea')) return;
+    if (e.target.closest?.('input, textarea, button')) return;
+    if(!started)return;
     if (window.__editorActive && !['Escape'].includes(e.code)) return;
     keys.add(e.code);
     if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
@@ -176,6 +193,7 @@ export function createHUD({ camera, walk, bridges }) {
     const knob = stick.firstChild;
     let jid = null, ox = 0, oy = 0;
     $('scene').addEventListener('pointerdown', (e) => {
+      if (!started)return;
       if (e.pointerType !== 'touch' || e.clientX >= innerWidth * 0.45 || jid !== null) return;
       jid = e.pointerId; ox = e.clientX; oy = e.clientY;
       stick.style.left = `${ox - 60}px`; stick.style.top = `${oy - 60}px`;
@@ -204,6 +222,7 @@ export function createHUD({ camera, walk, bridges }) {
     btns.innerHTML = '<button data-a="jump">JUMP</button><button data-a="use">E</button>';
     document.body.appendChild(btns);
     btns.addEventListener('pointerdown', (e) => {
+      if(!started)return;
       const a = e.target.dataset.a;
       if (a === 'jump' && ctx) ctx.player.input.jump = true;
       if (a === 'use') interact();
@@ -306,9 +325,12 @@ export function createHUD({ camera, walk, bridges }) {
   }
 
   return {
+    hasStarted:()=>started,
     progress(p) { $('loader-fill').style.width = `${Math.round(p * 100)}%`; },
     init(c) {
       ctx = c;
+      if(selectedGender)ctx.player.setGender(selectedGender);
+      $('start-btn').disabled=!selectedGender;
       ctx.post = window.__app?.post;
       for (const b of c.landmarks.beacons) {
         const el = document.createElement('div');

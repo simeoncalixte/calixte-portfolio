@@ -6,7 +6,10 @@ import { createPastPrison } from './prison.js';
 import { createExperienceGallery, EXHIBIT_LAYOUT } from './experienceGallery.js';
 import { createSkillsExhibits, SKILL_AREAS } from './skillsIsland.js';
 import { createInterestObservatory } from './interestIsland.js';
+import { createAIShrine } from './aiShrine.js';
+import { createMeditationGarden } from './meditationGarden.js';
 import { createInterestVerticals } from './interestVerticals.js';
+import { createInterestStone } from './interestStone.js';
 
 // ----------------------------------------------------------------- canvas helpers
 function canvasTex(w, h, draw) {
@@ -23,94 +26,6 @@ const glowMat = (hex, k = 3) => new THREE.MeshBasicMaterial({ color: new THREE.C
 
 function faceTowards(group, from, to) {
   group.rotation.y = Math.atan2(to.x - from.x, to.z - from.z);
-}
-
-// ----------------------------------------------------------------- 01 ABOUT: modern glass cabin
-function createHouse(mats) {
-  const g = new THREE.Group();
-  const W = 9, D = 6, H = 3.2;
-  const concrete = new THREE.MeshStandardMaterial({ color: '#8a8580', roughness: 0.85 });
-  const dark = new THREE.MeshStandardMaterial({ color: '#1b1c20', roughness: 0.6, metalness: 0.4 });
-  const wood = new THREE.MeshStandardMaterial({ map: mats.woodDiff, color: '#a87b55', roughness: 0.8 });
-
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(W + 1.2, 0.5, D + 3.5), concrete);
-  slab.position.set(0, 0.0, 0.9);
-  g.add(slab);
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(W + 1.0, 0.12, 3.2), wood);
-  deck.position.set(0, 0.3, D / 2 + 1.6);
-  g.add(deck);
-
-  // warm interior painted onto the window planes
-  const interior = canvasTex(1024, 384, (c, w, h) => {
-    const grd = c.createLinearGradient(0, 0, 0, h);
-    grd.addColorStop(0, '#ffcf8a'); grd.addColorStop(0.55, '#f59a45'); grd.addColorStop(1, '#7a3e1c');
-    c.fillStyle = grd; c.fillRect(0, 0, w, h);
-    // lamp pools
-    for (const x of [180, 520, 860]) {
-      const r = c.createRadialGradient(x, 70, 0, x, 70, 220);
-      r.addColorStop(0, 'rgba(255,245,220,.95)'); r.addColorStop(1, 'rgba(255,200,120,0)');
-      c.fillStyle = r; c.fillRect(0, 0, w, h);
-    }
-    c.fillStyle = 'rgba(60,25,10,.85)';
-    // furniture silhouettes: sofa, shelves, plant, table
-    c.fillRect(90, 270, 260, 60); c.fillRect(90, 240, 40, 90); c.fillRect(310, 240, 40, 90);
-    for (let i = 0; i < 4; i++) c.fillRect(640, 120 + i * 52, 190, 8);
-    c.fillRect(640, 110, 8, 230); c.fillRect(822, 110, 8, 230);
-    c.beginPath(); c.ellipse(940, 230, 40, 70, 0, 0, Math.PI * 2); c.fill(); c.fillRect(925, 280, 30, 60);
-    c.fillRect(420, 280, 150, 10); c.fillRect(440, 290, 8, 45); c.fillRect(545, 290, 8, 45);
-    // books
-    for (let i = 0; i < 22; i++) { c.fillStyle = `hsla(${20 + i * 13},50%,${30 + (i % 3) * 10}%,.9)`; c.fillRect(648 + i * 8, 92 + (i % 4) * 52, 6, 26); }
-  });
-  const glass = new THREE.MeshStandardMaterial({ map: interior, emissiveMap: interior, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 1.6, roughness: 0.15, metalness: 0.2 });
-  const front = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.3, H - 0.3), glass);
-  front.position.set(0, 0.25 + H / 2, D / 2);
-  g.add(front);
-  const sideMat = glass.clone();
-  sideMat.map = interior.clone(); sideMat.map.repeat.set(0.55, 1); sideMat.map.needsUpdate = true; sideMat.emissiveMap = sideMat.map;
-  for (const sx of [-1, 1]) {
-    const side = new THREE.Mesh(new THREE.PlaneGeometry(D - 0.3, H - 0.3), sideMat);
-    side.position.set(sx * W / 2, 0.25 + H / 2, 0);
-    side.rotation.y = sx * Math.PI / 2;
-    g.add(side);
-  }
-  const back = new THREE.Mesh(new THREE.BoxGeometry(W, H, 0.3), concrete);
-  back.position.set(0, 0.25 + H / 2, -D / 2);
-  g.add(back);
-  // mullions
-  const mul = new THREE.BoxGeometry(0.12, H, 0.12);
-  for (let i = 0; i <= 6; i++) {
-    const m = new THREE.Mesh(mul, dark);
-    m.position.set(-W / 2 + (W / 6) * i, 0.25 + H / 2, D / 2);
-    g.add(m);
-  }
-  for (const sx of [-1, 1]) for (let i = 0; i <= 3; i++) {
-    const m = new THREE.Mesh(mul, dark);
-    m.position.set(sx * W / 2, 0.25 + H / 2, -D / 2 + (D / 3) * i);
-    g.add(m);
-  }
-  const transom = new THREE.Mesh(new THREE.BoxGeometry(W, 0.1, 0.1), dark);
-  transom.position.set(0, 0.25 + H * 0.78, D / 2);
-  g.add(transom);
-  // cantilevered roof
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(W + 2.2, 0.35, D + 3.0), dark);
-  roof.position.set(0, 0.25 + H + 0.18, 0.9);
-  g.add(roof);
-  const fascia = new THREE.Mesh(new THREE.BoxGeometry(W + 2.2, 0.06, 0.06), glowMat('#ffbe78', 2.5));
-  fascia.position.set(0, 0.25 + H - 0.0, D / 2 + 2.4);
-  g.add(fascia);
-  // stair down from deck
-  for (let i = 0; i < 3; i++) {
-    const st = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.4), wood);
-    st.position.set(0, 0.22 - i * 0.16, D / 2 + 3.4 + i * 0.4);
-    g.add(st);
-  }
-  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-  front.castShadow = false;
-
-  const light = new THREE.PointLight('#ffa95c', 60, 22, 2);
-  light.position.set(0, 2.2, D / 2 + 1.8);
-  g.add(light);
-  return { group: g, footprint: { w: W + 1.2, d: D + 3.5, offZ: 0.9 }, beaconLocal: new THREE.Vector3(0, H + 0.6, 0) };
 }
 
 // ----------------------------------------------------------------- 03 SKILLS: orb + arches
@@ -326,11 +241,15 @@ export function createLandmarks(lib, tex, walk) {
     out.interactables.push({ id, position: c.clone(), radius: built.interactRadius || isl.radius * 0.85 });
   };
 
-  const house = createHouse(tex);
-  place('about', house, {
-    faceTo: new THREE.Vector3(0, 0, 0),
-    colliders: [-3.6, -1.2, 1.2, 3.6].flatMap((x) => [{ x, z: -1.6, r: 1.6 }, { x, z: 1.4, r: 1.6 }]),
-  });
+  const garden=createMeditationGarden(lib.trees);
+  place('about',garden,{faceTo:new THREE.Vector3(0,0,0)});
+  const meditation=garden.register(walk);
+  const about=out.interactables.find(it=>it.id==='about');
+  about.position=meditation.reading;about.radius=2.2;about.label='About me';
+  out.interactables.push({id:'meditate',label:'Meditate',position:meditation.seat,radius:1.6,
+    activate(player){
+      if(player?.meditate(meditation.seat,meditation.heading))return 'Take a quiet moment. Move to stand up.';
+    }});
 
   const gallery = createExperienceGallery();
   place('projects', gallery, {
@@ -360,6 +279,7 @@ export function createLandmarks(lib, tex, walk) {
   }
 
   place('interest', createInterestObservatory(), { faceTo: new THREE.Vector3(...island('about').center) });
+  out.group.add(createInterestStone(walk));
   out.interactables = out.interactables.filter(it => it.id !== 'interest');
   const verticals=createInterestVerticals(lib);
   out.group.add(verticals.group);
@@ -404,7 +324,10 @@ export function createLandmarks(lib, tex, walk) {
     out.group.add(ts);
     walk.addCollider(tx, tz, 0.6, 'telescope');
   }
-  // Scenic islands: leave the centres open for walking and viewing the world.
+  // A hidden shrine on an already-unlabeled island: no beacon, HUD label or sign.
+  const shrine=createAIShrine(walk);
+  out.group.add(shrine);out.updaters.push(shrine.userData.update);
+  // Scenic islands retain open routes around their set pieces.
   // Quiet markers describe the symbolism without inventing personal history.
   const pastSignTexture = (entrance) => canvasTex(1024, 512, (c, w, h) => {
     c.fillStyle = '#1d232b'; c.fillRect(0, 0, w, h);

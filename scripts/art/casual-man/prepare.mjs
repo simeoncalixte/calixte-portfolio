@@ -1,0 +1,12 @@
+import {NodeIO} from '@gltf-transform/core';
+import {weld,simplify,prune} from '@gltf-transform/functions';
+import {MeshoptSimplifier} from 'meshoptimizer';
+const io=new NodeIO(),doc=await io.read('scripts/art/casual-man/original.glb');
+await MeshoptSimplifier.ready;
+await doc.transform(weld(),simplify({simplifier:MeshoptSimplifier,ratio:.32,error:.001}),prune());
+const names={Spine:'Spine2',Spine01:'Spine1',Spine02:'Spine',neck:'Neck'};
+const joints=new Set(doc.getRoot().listSkins().flatMap(s=>s.listJoints()));
+for(const n of joints)n.setName('mixamorig:'+(names[n.getName()]||n.getName()));
+for(const a of doc.getRoot().listAnimations())a.dispose();
+await io.write('scripts/art/casual-man/prepared.glb',doc);
+console.log('Triangles',doc.getRoot().listMeshes().flatMap(m=>m.listPrimitives()).reduce((s,p)=>s+p.getIndices().getCount()/3,0));

@@ -1,10 +1,16 @@
 import * as THREE from 'three';
 import { mulberry32, createNoise2D } from '../core/noise.js';
-import { ISLANDS, radiusAt, surfaceHeight, SPAWN } from './layout.js';
+import { ISLANDS, radiusAt, surfaceHeight, SPAWN, buildBridgeData } from './layout.js';
 import { extractParts, normalizeModel } from '../core/assets.js';
+import { interestStonePosition } from './interestStone.js';
+import { shrineStonePosition } from './shrineStone.js';
 import { INTEREST_VERTICALS } from '../interests.js';
+import { overlapsBridgeRoute } from './bridgeClearance.js';
+import { addPropCollider, propBounds } from './propCollision.js';
 
 const noise = createNoise2D(31);
+const reflectionStone=interestStonePosition(buildBridgeData());
+const entranceStone=shrineStonePosition(buildBridgeData()).position;
 
 /** Areas kept clear of trees around the landmark set-pieces (world x,z,r). */
 export const CLEARINGS = {
@@ -12,14 +18,14 @@ export const CLEARINGS = {
   projects: [{ dx: 0, dz: 0, r: 10.5 }],
   about: [{ dx: 0, dz: 0, r: 9 }],
   skills: [{ dx: 0, dz: 0, r: 9.5 }],
-  interest: [{ dx: 0, dz: 0, r: 23 }, ...INTEREST_VERTICALS.map(area=>{
+  interest: [{ dx: reflectionStone.x+78, dz: reflectionStone.z+128, r: 4.5 }, { dx: 0, dz: 0, r: 23 }, ...INTEREST_VERTICALS.map(area=>{
     const radius=radiusAt(ISLANDS.find(isl=>isl.id==='interest'),area.angle)-4.8;
     return {dx:Math.cos(area.angle)*radius,dz:Math.sin(area.angle)*radius,r:4.5};
   })],
   contact: [{ dx: 0, dz: 0, r: 5 }],
   grove: [{ dx: 0, dz: 0, r: 4 }],
   past: [{ dx: 0, dz: 0, r: 6 }, { dx: -6, dz: 0, r: 6 }],
-  lookout: [{ dx: 0, dz: 0, r: 5 }, { dx: 3, dz: -4, r: 3 }],
+  lookout: [{ dx: 0, dz: 0, r: 5 }, { dx: 3, dz: -4, r: 3 }, { dx: 4, dz: 2, r: 4.8 }, { dx: entranceStone.x-112, dz: entranceStone.z+112, r: 2 }],
 };
 
 function inClearing(isl, x, z, pad = 0) {
@@ -56,7 +62,7 @@ export function createForest(pineModels, walk) {
 
   for (const isl of ISLANDS) {
     if (isl.gloomy) continue;
-    const count = Math.round(isl.radius * (isl.id === 'main' ? 1.9 : 1.4));
+    const count = Math.round(isl.radius * (isl.id === 'main' ? 1.3 : 1.0));
     const toMain = Math.atan2(-isl.center[2], -isl.center[0]);
     const filter = isl.id === 'main'
       // keep the view from the spawn point open towards the other islands
@@ -67,22 +73,33 @@ export function createForest(pineModels, walk) {
       const type = Math.floor(rand() * pineModels.length);
       const h = isl.id === 'main' ? 11 + rand() * 9 : 5.5 + rand() * 7;
       placements[type].push({ ...p, h, rot: rand() * Math.PI * 2, lean: (rand() - 0.5) * 0.06 });
-      walk.addCollider(p.x, p.z, 0.45 * (h / 12), 'tree');
+
     }
   }
   // a few big hero trees framing the left of the start view
   for (const [x, z, h] of [[-9, -16.5, 21], [-15, -7, 19], [-18, 2, 17], [15, -9, 18], [18, 1, 16], [12, 12, 17], [-10, 13, 18]]) {
     const isl = ISLANDS[0];
     placements[0].push({ x, z, y: surfaceHeight(isl, x, z), h, rot: rand() * 6, lean: 0 });
-    walk.addCollider(x, z, 0.7, 'tree');
+
   }
 
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), e = new THREE.Euler();
   pineModels.forEach((model, i) => {
-    const list = placements[i];
+    let list = placements[i];
     if (!list.length) return;
     const parts = extractParts(model.scene);
     const baseH = model.height;
+    list=list.filter(pl=>{
+      e.set(pl.lean,pl.rot,pl.lean*.5);q.setFromEuler(e);
+      m.compose(p.set(pl.x,pl.y-.15,pl.z),q,s.setScalar(pl.h/baseH));
+      return !overlapsBridgeRoute(propBounds(parts,m,pl.y+2),walk.bridges);
+    });
+    if(!list.length)return;
+    for(const pl of list){
+      e.set(pl.lean,pl.rot,pl.lean*.5); q.setFromEuler(e);
+      m.compose(p.set(pl.x,pl.y-.15,pl.z),q,s.setScalar(pl.h/baseH));
+      addPropCollider(walk,parts,m,'tree',pl.y+1.8);
+    }
     for (const part of parts) {
       const inst = new THREE.InstancedMesh(part.geometry, part.material, list.length);
       inst.castShadow = true;
@@ -103,23 +120,15 @@ export function createForest(pineModels, walk) {
   return group;
 }
 
-/** Tints tree materials for the dusk palette and fixes alpha-card leaves. */
+/** Preserves the authored bark/leaf textures and fixes alpha-card leaves. */
 export function prepPine(gltf) {
   const wrap = normalizeModel(gltf.scene, { height: 1 });
   wrap.traverse((o) => {
     if (!o.isMesh) return;
     const mat = o.material.clone();
     mat.envMapIntensity = 0.4;
-    if (mat.map && /leaf|leaves|needle|pine/i.test(mat.name + (mat.map.name || ''))) {
-      mat.alphaTest = 0.45;
-      mat.transparent = false;
-      mat.side = THREE.DoubleSide;
-      mat.color.multiply(new THREE.Color('#9fb38a'));
-    } else if (/bark|trunk/i.test(mat.name)) {
-      mat.color.multiply(new THREE.Color('#9a8a7a'));
-    } else {
-      mat.color.multiply(new THREE.Color('#8fa080'));
-      if (mat.map) { mat.alphaTest = 0.4; mat.side = THREE.DoubleSide; }
+    if(mat.alphaTest>0 || mat.transparent){
+      mat.alphaTest=.4;mat.transparent=false;mat.side=THREE.DoubleSide;
     }
     mat.roughness = 0.9;
     o.material = mat;
@@ -233,13 +242,29 @@ export function scatterProps(lib, walk) {
   const rand = mulberry32(555);
   const rocks = new Instancer(), plants = new Instancer();
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), E = new THREE.Euler();
+  const collisionParts = new Map();
   const pick = (arr) => arr[Math.floor(rand() * arr.length)];
   const place = (inst, variant, x, y, z, scale, sink = 0.1, tilt = 0) => {
     E.set((rand() - 0.5) * tilt, rand() * Math.PI * 2, (rand() - 0.5) * tilt);
     Q.setFromEuler(E);
     S.setScalar(scale);
     P.set(x, y - sink * scale, z);
-    inst.add(variant, M.compose(P, Q, S));
+    M.compose(P,Q,S);
+    // Reject entire prop footprints near the inscription, including large
+    // rim rocks whose origins lie outside the stone's vegetation clearing.
+    if(!collisionParts.has(variant))collisionParts.set(variant,extractParts(variant));
+    const bounds=propBounds(collisionParts.get(variant),M);
+    const nearestX=THREE.MathUtils.clamp(reflectionStone.x,bounds.min.x,bounds.max.x);
+    const nearestZ=THREE.MathUtils.clamp(reflectionStone.z,bounds.min.z,bounds.max.z);
+    if(Math.hypot(nearestX-reflectionStone.x,nearestZ-reflectionStone.z)<4.5)return;
+    if(inst===rocks){
+      if(overlapsBridgeRoute(propBounds(collisionParts.get(variant),M),walk.bridges))return;
+    }
+    inst.add(variant,M);
+    if(inst===rocks){
+      if(!collisionParts.has(variant))collisionParts.set(variant,extractParts(variant));
+      addPropCollider(walk,collisionParts.get(variant),M,'rock');
+    }
   };
 
   for (const isl of ISLANDS) {
@@ -254,7 +279,7 @@ export function scatterProps(lib, walk) {
     }
     for (const p of scatter(isl, rand, Math.max(1, Math.round(isl.radius * 0.12)), 0.4, 0.85, walk, { bridgePad: 2, clearPad: 1 })) {
       place(rocks, rand() < 0.5 ? lib.stump : lib.trunk, p.x, p.y, p.z, 1, 0.05);
-      walk.addCollider(p.x, p.z, 0.6, 'stump');
+
     }
   }
 
@@ -263,7 +288,7 @@ export function scatterProps(lib, walk) {
   for (const [x, z, sc, kind] of [[-9.5, -17.8, 2.2, 0], [7.5, -19.4, 1.8, 1], [14, -14.5, 2.0, 0], [-12.5, -15.2, 2.6, 1], [-14.5, -10, 2.0, 0], [-6, -3, 1.3, 1], [5, -2, 1.1, 0], [-7.4, -19.2, 1.4, 1], [11, -17.5, 1.5, 1]]) {
     const y = surfaceHeight(main, x, z);
     place(rocks, kind ? lib.rockFace : lib.cliff, x, y, z, sc, 0.25, 0.3);
-    walk.addCollider(x, z, 0.75 * sc, 'rock');
+
   }
   rocks.build(group, true);
   const before = group.children.length;

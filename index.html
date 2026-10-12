@@ -48,7 +48,13 @@
       <h1>Build a<br /><em>Brighter Tomorrow</em></h1>
       <div class="dash"></div>
       <p>I'm Calixte. I build applications, lead teams,<br />and help developers grow.</p>
-      <button class="cta" id="start-btn">START EXPLORING <span>&rarr;</span></button>
+      <fieldset class="character-choice" id="character-choice">
+        <legend>Choose your character</legend>
+        <label><input type="radio" name="character-gender" value="male" /> Male</label>
+        <label><input type="radio" name="character-gender" value="female" /> Female</label>
+        <small>Same abilities. Choose your preferred appearance.</small>
+      </fieldset>
+      <button class="cta" id="start-btn" disabled>START EXPLORING <span>&rarr;</span></button>
     </section>
 
     <div id="labels"></div>
@@ -58,13 +64,6 @@
       <canvas id="minimap" width="180" height="180"></canvas>
       <span class="n">N</span><span class="e">E</span><span class="s">S</span><span class="w">W</span>
       <svg class="arrow" viewBox="0 0 24 24"><path d="M12 3l7 17-7-4-7 4z" /></svg>
-    </div>
-
-    <div class="controls">
-      <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move</span></div>
-      <div><svg width="22" height="28" viewBox="0 0 22 28" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="20" height="26" rx="10"/><path d="M11 1v10M1 11h20"/></svg><span>Look Around</span></div>
-      <div><kbd class="wide">SHIFT</kbd><span>Run</span></div>
-      <div><kbd class="wide">SPACE</kbd><span>Jump</span></div>
     </div>
 
     <div class="quote">
@@ -87,8 +86,8 @@
     <div class="help-card">
       <h2>How to explore</h2>
       <ul>
-        <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> — walk</li>
-        <li><kbd>←</kbd><kbd>→</kbd> — rotate camera · <kbd>↑</kbd><kbd>↓</kbd> — tilt camera</li>
+        <li><kbd>W</kbd><kbd>S</kbd> — walk forward / backward</li>
+        <li><kbd>A</kbd><kbd>D</kbd> or <kbd>←</kbd><kbd>→</kbd> — rotate camera · <kbd>↑</kbd><kbd>↓</kbd> — tilt camera</li>
         <li><kbd>C</kbd> — resume camera follow from behind</li>
         <li><kbd class="wide">SHIFT</kbd> — run</li>
         <li><kbd class="wide">SPACE</kbd> — jump</li>

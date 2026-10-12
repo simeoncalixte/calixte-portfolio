@@ -1,3 +1,4 @@
+import { SKILL_JOURNEY } from '../skillJourney.js';
 import { SKILL_AREAS } from '../world/skillsIsland.js';
 import { EXPERIENCE, PROFILE, SKILL_GROUPS } from '../experience.js';
 import { INTEREST_VERTICALS } from '../interests.js';
@@ -23,8 +24,9 @@ export const CONTENT = {
   projects: `<div class="num">02 — EXPERIENCE ISLAND</div><h2>A career you can explore.</h2>
     <p>Six chapters in building, connecting, and teaching software. Select a chapter, or approach its exhibit in the world and press E.</p>
     <div class="experience-grid">${EXPERIENCE.map((e,i)=>`<button class="experience-card" data-experience="experience-${e.id}" style="--chapter-color:${e.color}">
-      ${image(e)}<div class="chapter-copy"><span class="chapter-year">0${i+1} / ${e.year}</span><h3>${e.company}</h3><p>${e.focus}</p><span class="chapter-open">EXPLORE CHAPTER ↗</span></div></button>`).join('')}</div>`,
-  skills: `<div class="num">03 — SKILLS</div><h2>From interface to infrastructure.</h2><p>Explore the four illuminated workbenches around the core. Each displays my tools in the world; press E nearby to see the related work.</p>
+      ${image(e)}<div class="chapter-copy"><span class="chapter-year">0${i+1} / ${e.year}</span><h3>${e.company}${e.client ? ' · Contract' : ''}</h3>${e.client ? `<p>Employer: ${e.employer}<br />Contract client: ${e.client}</p>` : ''}<p>${e.focus}</p><span class="chapter-open">EXPLORE CHAPTER ↗</span></div></button>`).join('')}</div>`,
+  skills: `<div class="num">03 — SKILLS</div><h2>From interface to infrastructure.</h2><p>Start at the Skills hub, then follow the bridge north through four connected islands: data analytics and pipelines; APIs, servers, databases and infrastructure; UI; and visualization. Press E beside each island’s display for detailed skills and related work.</p>
+    <div class="cards">${SKILL_JOURNEY.map((chapter,i)=>`<button class="skill-work" data-experience="${chapter.id}"><span>0${i+1} · ${chapter.title}</span><small>${chapter.stages.join(" → ")}</small><b>EXPLORE CHAPTER ↗</b></button>`).join('')}</div>
     <div class="skill-grid">${SKILL_GROUPS.map(([name,items],i)=>`<section class="skill-group"><span class="skill-number">0${i+1}</span><h3>${name}</h3>${tags(items)}<button class="skill-explore" data-experience="skills-${SKILL_AREAS[i].id}">EXPLORE THIS AREA →</button></section>`).join('')}</div>`,
   contact: `<div class="num">04 — CONTACT</div><h2>Let's build something useful.</h2><p>Connect with Calixte Simeon.</p>
     <div class="contact-links"><a href="mailto:${PROFILE.email}">Email ↗</a><a href="${PROFILE.github}" target="_blank" rel="noopener">GitHub ↗</a><a href="${PROFILE.linkedin}" target="_blank" rel="noopener">LinkedIn ↗</a></div>
@@ -36,7 +38,7 @@ for (const [i,e] of EXPERIENCE.entries()) CONTENT[`experience-${e.id}`] = `
   <div class="chapter-detail" style="--chapter-color:${e.color}">
     <div class="num">CHAPTER 0${i+1} / ${e.year}</div><h2>${e.title}</h2>
     ${image(e)}<p class="image-credit">${e.caption}. Brand context imagery.</p>
-    <div class="chapter-heading"><div><h3>${e.company}</h3><p>${e.role}<br /><span>${e.employer} · ${e.dates}</span></p></div><div class="chapter-metric"><strong>${e.metric}</strong><span>${e.metricLabel}</span></div></div>
+    <div class="chapter-heading"><div><h3>${e.company}${e.client ? ' · Contract' : ''}</h3><p>${e.role}<br /><span>${e.client ? `Employer: ${e.employer}<br />Contract client: ${e.client}<br />` : `${e.employer} · `}${e.dates}</span></p></div><div class="chapter-metric"><strong>${e.metric}</strong><span>${e.metricLabel}</span></div></div>
     ${e.phases ? `<div class="employment-phases">${e.phases.map(p=>`<span>${p}</span>`).join('')}</div>` : ''}
     <p>${e.summary}</p>${flow(e)}
     <ul class="outcomes">${e.outcomes.map(o=>`<li>${o}</li>`).join('')}</ul>${tags(e.stack)}
@@ -53,7 +55,7 @@ for (const area of SKILL_AREAS) CONTENT[`skills-${area.id}`] = `
     <h3 class="related-heading">Applied in the real world</h3>
     <div class="cards">${area.examples.map(id=>EXPERIENCE.find(e=>e.id===id)).map(e=>`
       <button class="skill-work" data-experience="experience-${e.id}">
-        <span>${e.company}</span><small>${e.focus}</small><b>EXPLORE WORK ↗</b>
+        <span>${e.company}${e.client ? ' · Contract' : ''}</span><small>${e.client ? `Via ${e.employer} · ` : ''}${e.focus}</small><b>EXPLORE WORK ↗</b>
       </button>`).join('')}</div>
   </div>`;
 
@@ -64,3 +66,11 @@ for (const area of INTEREST_VERTICALS) CONTENT[`interest-${area.id}`] = `
   <ul class="outcomes">${area.ideas.map(idea=>`<li>${idea}</li>`).join('')}</ul>
   ${area.id==='education'?'<button class="cta" data-experience="experience-geeks">EXPLORE MY TEACHING EXPERIENCE <span>→</span></button>':''}
   ${area.source ? `<p class="image-credit">3D model: <a href="${area.source}" target="_blank" rel="noopener">${area.modelName} by ${area.author}</a> · <a href="${area.licenseUrl || 'https://creativecommons.org/licenses/by/3.0/'}" target="_blank" rel="noopener">${area.license || 'CC BY 3.0'}</a>. Display scale and placement adjusted.</p>` : `<p class="image-credit">${area.modelName} · Original artwork created for this portfolio.</p>`}`;
+
+for (const [index,chapter] of SKILL_JOURNEY.entries()) CONTENT[chapter.id]=`
+  <button class="chapter-back" data-experience="skills">← SKILLS JOURNEY</button>
+  <div class="num">SKILLS JOURNEY / ${index+1} OF 4</div>
+  <h2>${chapter.title}</h2><p>${chapter.intro}</p>${tags(chapter.tools)}
+  ${chapter.topics.map(([title,text])=>`<h3>${title}</h3><p>${text}</p>`).join('')}
+  <h3>Related experience</h3><div class="cards">${chapter.examples.map(id=>EXPERIENCE.find(e=>e.id===id)).map(e=>`<button class="skill-work" data-experience="experience-${e.id}"><span>${e.company}${e.client?` · Contract via ${e.employer}`:''}</span><small>${e.role}</small><b>EXPLORE WORK ↗</b></button>`).join('')}</div>
+  <button class="chapter-next" data-experience="${SKILL_JOURNEY[index+1]?.id || 'skills'}">${index<3?'NEXT: '+SKILL_JOURNEY[index+1].title:'BACK TO SKILLS'} →</button>`;

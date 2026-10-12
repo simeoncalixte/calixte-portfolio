@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SKILL_JOURNEY } from '../skillJourney.js';
 import { createNoise2D, fbm, smoothstep } from '../core/noise.js';
 
 const noise = createNoise2D(7);
@@ -26,6 +27,7 @@ export const ISLANDS = [
   { id: 'grove', center: [-49, -5, -43], radius: 15, depth: 29, seed: 6, label: null },
   { id: 'past', center: [-650, -12, -43], radius: 19, depth: 46, seed: 8, label: null, gloomy: true },
   { id: 'interest', center: [-78, -4, -128], radius: 25, depth: 33, seed: 9, label: { num: '05', title: 'INTEREST', sub: 'Schema-on-Read Observatory' } },
+  ...SKILL_JOURNEY.map((chapter,i)=>({id:chapter.id,center:[64+(i%2)*48,-5,-200-i*54],radius:17,depth:30,seed:20+i,label:{num:`03.${i+1}`,title:chapter.short,sub:`Skills journey · ${i+1} of 4`}})),
   { id: 'lookout', center: [112, -2, -112], radius: 12, depth: 32, seed: 7, label: null },
 ];
 
@@ -38,6 +40,7 @@ export const BRIDGES = [
   { from: 'main', to: 'grove', width: 3.4, lights: true },
   { from: 'grove', to: 'projects', width: 3.4, lights: true },
   { from: 'about', to: 'interest', width: 3.6, lights: true },
+  ...SKILL_JOURNEY.map((chapter,i)=>({from:i?SKILL_JOURNEY[i-1].id:'skills',to:chapter.id,width:3.6,lights:true})),
   { from: 'skills', to: 'lookout', width: 3.2, lights: true },
   { from: 'grove', to: 'past', width: 3.6, lights: true, gloomy: true },
 ];

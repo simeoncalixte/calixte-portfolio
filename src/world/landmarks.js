@@ -9,6 +9,7 @@ import { createInterestObservatory } from './interestIsland.js';
 import { createAIShrine } from './aiShrine.js';
 import { createMeditationGarden } from './meditationGarden.js';
 import { createInterestVerticals } from './interestVerticals.js';
+import { createSkillJourney } from './skillJourneyIslands.js';
 import { createInterestStone } from './interestStone.js';
 
 // ----------------------------------------------------------------- canvas helpers
@@ -214,6 +215,8 @@ function createLanternPost(lanternModel) {
 export function createLandmarks(lib, tex, walk) {
   const out = { group: new THREE.Group(), beacons: [], updaters: [], interactables: [] };
   out.group.name = 'landmarks';
+  const journey=createSkillJourney(walk);
+  out.group.add(journey.group);out.interactables.push(...journey.interactables);out.beacons.push(...journey.beacons);out.updaters.push(journey.update);
   const mainC = new THREE.Vector3(0, 0, 0);
 
   const place = (id, built, { faceTo, colliders = [] } = {}) => {

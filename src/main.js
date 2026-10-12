@@ -162,11 +162,11 @@ async function loadAll() {
     loadModel('ghost'),
     Promise.all(INTEREST_VERTICALS.map(async area=>[area.model,(await loadModel(area.model)).scene])),
     loadModel('pine_a'), loadModel('pine_b'), loadModel('pine_c'), loadModel('pine_d'),
-    loadModel('rock_moss_set_01'), loadModel('rock_moss_set_02'), loadModel('rock_07'), loadModel('namaqualand_cliff_01'),
-    loadModel('fern_02'), loadModel('shrub_02'), loadModel('tree_stump_01'), loadModel('dead_tree_trunk'), loadModel('rock_face_01'),
+    loadModel('rock_moss_set_01'), loadModel('rock_moss_set_02'), loadModel('rock_07'),
+    loadModel('fern_02'), loadModel('shrub_02'), loadModel('tree_stump_01'), loadModel('dead_tree_trunk'),
     loadModel('lantern'), loadModel('telescope'),
   ]);
-  const [pa, pb, pc, pd, rm1, rm2, r7, cliff, fern, shrub, stump, trunk, rface, lantern, telescope] = rest;
+  const [pa, pb, pc, pd, rm1, rm2, r7, fern, shrub, stump, trunk, lantern, telescope] = rest;
 
   // image based lighting for reflections/ambient (background stays the painted sky)
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -184,8 +184,6 @@ async function loadAll() {
     shrubs: prepVariants(shrub, 1.4, '#a7b88f'),
     stump: prepProp(stump, 1.4),
     trunk: prepProp(trunk, 4.5),
-    cliff: prepProp(cliff, 2.4, '#a9a39d'),
-    rockFace: prepProp(rface, 2.4, '#a9a39d'),
     lantern: normalizeModel(lantern.scene, { height: 0.55 }),
     telescope: normalizeModel(telescope.scene, { height: 1.6 }),
     ...Object.fromEntries(interestModels),

@@ -122,9 +122,9 @@ test('dog reaches the player across islands with landmark and vegetation obstacl
     const nav=buildDogNavigation(walk);
     for(const isl of ISLANDS)assert.ok(nav.nodes.some(n=>n.islandId===isl.id),`${isl.id} remains connected`);
     const skillDisplays=landmarks.interactables.filter(it=>it.id.startsWith('skills-'));
-    assert.equal(skillDisplays.length,4);
+    assert.equal(skillDisplays.length,12);
     for(const display of skillDisplays) {
-      assert.ok(nav.nodes.some(n=>n.islandId==='skills' &&
+      assert.ok(nav.nodes.some(n=>n.islandId===(island(display.id)?display.id:'skills') &&
         Math.hypot(n.position.x-display.position.x,n.position.z-display.position.z)<display.radius &&
         Math.abs(n.position.y-display.position.y)<4),`${display.id} has a reachable interaction point`);
     }

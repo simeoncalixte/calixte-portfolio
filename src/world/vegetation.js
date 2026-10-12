@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SKILL_JOURNEY } from '../skillJourney.js';
 import { mulberry32, createNoise2D } from '../core/noise.js';
 import { ISLANDS, radiusAt, surfaceHeight, SPAWN, buildBridgeData } from './layout.js';
 import { extractParts, normalizeModel } from '../core/assets.js';
@@ -14,6 +15,7 @@ const entranceStone=shrineStonePosition(buildBridgeData()).position;
 
 /** Areas kept clear of trees around the landmark set-pieces (world x,z,r). */
 export const CLEARINGS = {
+  ...Object.fromEntries(SKILL_JOURNEY.map(chapter=>[chapter.id,[{dx:0,dz:0,r:13}]])),
   main: [{ dx: SPAWN.x, dz: SPAWN.z, r: 5 }, { dx: -4.3, dz: -18.6, r: 2.4 }],
   projects: [{ dx: 0, dz: 0, r: 10.5 }],
   about: [{ dx: 0, dz: 0, r: 9 }],
@@ -283,11 +285,13 @@ export function scatterProps(lib, walk) {
     }
   }
 
-  // rocky ledge framing the start point (reference: bottom of frame)
+  // Whole boulders around the start point. Cliff-face scans are open-backed
+  // terrain sections and expose sliced edges when used as standalone props.
   const main = ISLANDS[0];
   for (const [x, z, sc, kind] of [[-9.5, -17.8, 2.2, 0], [7.5, -19.4, 1.8, 1], [14, -14.5, 2.0, 0], [-12.5, -15.2, 2.6, 1], [-14.5, -10, 2.0, 0], [-6, -3, 1.3, 1], [5, -2, 1.1, 0], [-7.4, -19.2, 1.4, 1], [11, -17.5, 1.5, 1]]) {
     const y = surfaceHeight(main, x, z);
-    place(rocks, kind ? lib.rockFace : lib.cliff, x, y, z, sc, 0.25, 0.3);
+    const boulder=lib.rocks[(kind + Math.round(Math.abs(x))) % lib.rocks.length];
+    place(rocks, boulder, x, y, z, sc, 0.12, 0.08);
 
   }
   rocks.build(group, true);

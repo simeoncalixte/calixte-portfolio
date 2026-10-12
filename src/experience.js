@@ -3,10 +3,10 @@ import { publicUrl } from './core/publicUrl.js';
 const asset = (name) => publicUrl(`assets/experience/${name}`);
 export const PROFILE = { name: 'Calixte S. Simeon', email: 'SimeonCalixte@gmail.com', github: 'https://github.com/simeoncalixte', linkedin: 'https://linkedin.com/in/simeoncalixte' };
 export const EXPERIENCE = [
-  { id: 'xbox', company: 'Microsoft Xbox', employer: 'TEKsystems · Contract', role: 'Software Engineer II Consultant', dates: 'Feb — Nov 2025', year: '2025', color: '#93dd3e',
+  { id: 'xbox', company: 'Microsoft Xbox', employer: 'TEKsystems', client: 'Microsoft Xbox', role: 'Software Engineer II Consultant', dates: 'Feb — Nov 2025', year: '2025', color: '#93dd3e',
     image: asset('xbox-console.png'), imageAlt: 'Xbox Series X console and controller', source: 'https://www.xbox.com/en-US/consoles/xbox-series-x', caption: 'Xbox product imagery · Microsoft',
     title: 'Keep play moving.', focus: 'Legacy frontend modernization', metric: 'UX', metricLabel: 'Responsiveness & reliability',
-    summary: 'Maintained and enhanced legacy frontend applications for the Microsoft Xbox team.',
+    summary: 'Employed by TEKsystems and assigned to Microsoft Xbox as a contract Software Engineer II Consultant, maintaining and enhancing legacy frontend applications.',
     outcomes: ['Resolved critical issues across user flows.', 'Refactored legacy code for performance and maintainability.', 'Delivered features with cross-functional teams while preserving compatibility.'],
     stack: ['Frontend engineering', 'Refactoring', 'Technical documentation'], flow: ['Legacy UI', 'Modernize', 'Player experience'], type: 'console' },
   { id: 'manit', company: 'ManitLabs', employer: 'Full time · Hybrid', role: 'Development Lead', dates: 'Jul 2023 — Nov 2024', year: '2023–24', color: '#80b8ff',
@@ -34,10 +34,10 @@ export const EXPERIENCE = [
     summary: 'Integrated Amazon’s Selling Partner API into the existing business infrastructure for inventory management.',
     outcomes: ['Connected legacy systems using PHP and JavaScript.', 'Developed business web components with unit and integration tests.', 'Configured IAM users, policies, and roles for access management.'],
     stack: ['PHP', 'JavaScript', 'Amazon SP-API', 'IAM', 'Integration tests'], flow: ['Inventory', 'SP-API', 'Commerce'], type: 'inventory' },
-  { id: 'cbs', company: 'CBS Interactive', employer: 'WorkForceLogic · Contract', role: 'Associate Software Engineer', dates: 'Jan — Sep 2019', year: '2019', color: '#58d7e8',
+  { id: 'cbs', company: 'CBS Interactive', employer: 'Workforce Logic', client: 'CBS Interactive', role: 'Associate Software Engineer', dates: 'Jan — Sep 2019', year: '2019', color: '#58d7e8',
     logo: asset('cbs-logo.svg'), image: asset('cbs-logo.svg'), imageAlt: 'CBS Interactive company logo', source: 'https://commons.wikimedia.org/wiki/File:CBS_Interactive_Logo.svg', caption: 'CBS Interactive logo · via Wikimedia Commons',
     title: 'Move to the cloud.', focus: 'Modern web applications', metric: 'AWS', metricLabel: 'Hosted application transition',
-    summary: 'Supported the transition of an existing product to a modern AWS-hosted framework.',
+    summary: 'Employed by Workforce Logic and assigned to CBS Interactive as a contract Associate Software Engineer, supporting the transition of an existing product to a modern AWS-hosted framework.',
     outcomes: ['Developed scalable React components.', 'Helped transition the application to REST APIs and client-side functionality.', 'Documented APIs with Swagger and tested with Jest and Enzyme.'],
     stack: ['React', 'AWS', 'REST', 'Swagger', 'Jest', 'Enzyme'], flow: ['Legacy product', 'REST APIs', 'AWS'], type: 'cloud' },
 ];

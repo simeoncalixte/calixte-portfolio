@@ -24,8 +24,8 @@ function displayTexture(experience) {
     if (images.logo && experience.logo !== experience.image) {
       c.fillStyle = '#ffffff'; c.fillRect(48, 104, 250, 84); contain(images.logo, 62, 116, 222, 60);
     }
-    c.fillStyle = '#ffffff'; c.font = '700 43px sans-serif'; c.fillText(experience.company, 42, 636);
-    c.fillStyle = '#c9d4df'; c.font = '26px sans-serif'; c.fillText(experience.focus, 42, 685);
+    c.fillStyle = '#ffffff'; c.font = '700 43px sans-serif'; c.fillText(`${experience.company}${experience.client ? ' · Contract' : ''}`, 42, 636, 940);
+    c.fillStyle = '#c9d4df'; c.font = '26px sans-serif'; c.fillText(experience.client ? `Employer: ${experience.employer} · Contract client: ${experience.client}` : experience.focus, 42, 685, 940);
     c.fillStyle = experience.color; c.font = '22px sans-serif'; c.fillText('E  EXPLORE THIS CHAPTER', 42, 733);
     texture.needsUpdate = true;
   }
